@@ -10,3 +10,5 @@ https://dallgoo119-commits.github.io/DMICU/
 
 - `index.html`: 전략 보고서 본문
 - `gwangju_emergency_map.html`: 보고서에 포함된 광주·전남 응급의료기관 실시간 병상 지도
+- `.github/workflows/update-beds.yml`: 2시간마다 병상 현황을 다시 수집해 지도 HTML을 자동 커밋
+- `scripts/update_emergency_map.py`: 내 손안의 응급실 API를 호출해 병상 현황과 추이 데이터를 갱신
