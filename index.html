@@ -734,11 +734,11 @@ a {
                 <input name="지역" type="text" placeholder="예: 광주 서구, 전남 순천, 비공개">
               </label>
               <label>의견
-                <textarea name="의견" placeholder="필요한 정보, 오류 지적, 현장 경험, 보강 요청을 적어 주세요." required></textarea>
+                <textarea name="의견" maxlength="2000" placeholder="필요한 정보, 오류 지적, 현장 경험, 보강 요청을 적어 주세요." required></textarea>
               </label>
               <button id="publicCommentSubmit" type="submit">비회원 의견 남기기</button>
             </form>
-            <p id="publicCommentStatus" class="comment-status">제출하면 아래 게시판에 바로 표시됩니다. 현재 정적 페이지 방식이라 다른 방문자와 공유되는 공개 저장은 별도 서버 연결이 필요합니다.</p>
+            <p id="publicCommentStatus" class="comment-status">제출하면 아래 게시판에 바로 표시되고, 다른 방문자에게도 공유됩니다.</p>
             <div class="local-comment-board" aria-live="polite">
               <h3>비회원 의견 게시판</h3>
               <div id="localCommentList" class="local-comment-list"></div>
@@ -808,8 +808,9 @@ a {
 <script>
 const VISITOR_STATS_ENDPOINT = window.DMICU_VISITOR_STATS_ENDPOINT || 'visitor-stats.json';
 const EMS_FEEDBACK_FORM_URL = window.DMICU_EMS_FEEDBACK_FORM_URL || '';
-const PUBLIC_COMMENT_FORM_URL = window.DMICU_PUBLIC_COMMENT_FORM_URL || '';
-const LOCAL_COMMENT_STORAGE_KEY = 'dmicu_public_comments_v1';
+const SUPABASE_URL = 'https://vbqkjubanmpcahbctyfk.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_oTQFAvDCSzfqWfRrt9bjrw_ebhSI85e';
+const SUPABASE_COMMENTS_ENDPOINT = `${SUPABASE_URL}/rest/v1/comments`;
 function setText(id, value) {
   document.getElementById(id).textContent = value == null || value === '' ? '집계 대기' : String(value);
 }
@@ -844,8 +845,7 @@ function wirePublicCommentFormLink() {
   const submit = document.getElementById('publicCommentSubmit');
   const status = document.getElementById('publicCommentStatus');
   if (!form || !submit || !status) return;
-  form.addEventListener('submit', (event) => {
-    if (PUBLIC_COMMENT_FORM_URL) return;
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
     const body = String(formData.get('의견') || '').trim();
@@ -853,30 +853,46 @@ function wirePublicCommentFormLink() {
     const item = {
       role: String(formData.get('작성자 구분') || '비공개'),
       region: String(formData.get('지역') || '비공개').trim() || '비공개',
-      body,
-      createdAt: new Date().toISOString()
+      body
     };
-    const comments = readLocalComments();
-    comments.unshift(item);
-    localStorage.setItem(LOCAL_COMMENT_STORAGE_KEY, JSON.stringify(comments.slice(0, 30)));
-    renderLocalComments();
-    form.reset();
-    status.textContent = '의견이 아래 게시판에 추가되었습니다. 이 브라우저에서는 새로고침 후에도 유지됩니다.';
+    submit.disabled = true;
+    status.textContent = '의견을 저장하는 중입니다.';
+    try {
+      await saveSupabaseComment(item);
+      form.reset();
+      status.textContent = '의견이 게시판에 추가되었습니다.';
+      await renderLocalComments();
+    } catch (error) {
+      status.textContent = '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+    } finally {
+      submit.disabled = false;
+    }
   });
-  if (PUBLIC_COMMENT_FORM_URL) {
-    form.action = PUBLIC_COMMENT_FORM_URL;
-    submit.textContent = '비회원 의견 제출';
-    status.textContent = '제출 시 별도 로그인 없이 의견이 전송됩니다. 개인 식별 정보는 적지 않는 것을 권장합니다.';
-  }
 }
 wirePublicCommentFormLink();
-function readLocalComments() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(LOCAL_COMMENT_STORAGE_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
+async function supabaseRequest(path, options = {}) {
+  const response = await fetch(`${SUPABASE_COMMENTS_ENDPOINT}${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  if (!response.ok) throw new Error(`Supabase request failed: ${response.status}`);
+  if (response.status === 204) return [];
+  return response.json();
+}
+async function loadSupabaseComments() {
+  return supabaseRequest('?select=role,region,body,created_at&order=created_at.desc&limit=50');
+}
+async function saveSupabaseComment(comment) {
+  return supabaseRequest('', {
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify(comment)
+  });
 }
 function formatLocalCommentDate(value) {
   try {
@@ -890,10 +906,16 @@ function formatLocalCommentDate(value) {
     return '';
   }
 }
-function renderLocalComments() {
+async function renderLocalComments() {
   const list = document.getElementById('localCommentList');
   if (!list) return;
-  const comments = readLocalComments();
+  let comments = [];
+  try {
+    comments = await loadSupabaseComments();
+  } catch (error) {
+    list.innerHTML = '<p class="local-comment-empty">게시판을 불러오지 못했습니다. Supabase 연결 또는 RLS 정책을 확인해 주세요.</p>';
+    return;
+  }
   if (!comments.length) {
     list.innerHTML = '<p class="local-comment-empty">아직 남겨진 의견이 없습니다.</p>';
     return;
@@ -903,7 +925,7 @@ function renderLocalComments() {
     item.className = 'local-comment-item';
     const meta = document.createElement('div');
     meta.className = 'local-comment-meta';
-    meta.textContent = `${comment.role || '비공개'} · ${comment.region || '비공개'} · ${formatLocalCommentDate(comment.createdAt)}`;
+    meta.textContent = `${comment.role || '비공개'} · ${comment.region || '비공개'} · ${formatLocalCommentDate(comment.created_at)}`;
     const body = document.createElement('div');
     body.className = 'local-comment-body';
     body.textContent = comment.body || '';
