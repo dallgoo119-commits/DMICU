@@ -794,7 +794,7 @@ async function loadVisitorStats(recordVisit = false) {
     setText('activeVisitors', stats.active);
     setText('totalVisitors', Number(stats.total || 0) + PUBLIC_BASELINE_VISITORS);
     setText('todayVisitors', stats.today);
-    document.getElementById('visitorStatsNote').textContent = '현재 접속자는 최근 5분 이내 접속 세션 기준이며, 총 접속자 수는 2026년 6월 말 기준 누적 공람 추산치 350명을 포함합니다.';
+    document.getElementById('visitorStatsNote').textContent = '현재 접속자는 최근 5분 이내 접속 세션 기준입니다.';
   } catch (error) {
     document.getElementById('visitorStatsNote').textContent = '방문 집계 테이블 또는 RPC 함수가 아직 Supabase에 생성되지 않았습니다. supabase_visitor_stats.sql을 실행하면 자동 표시됩니다.';
   }
