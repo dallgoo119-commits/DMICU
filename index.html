@@ -333,6 +333,34 @@ p { margin: 0 0 14px; }
 .comment-panel p {
   font-size: 14px;
 }
+.nonmember-comment {
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: #fbfcfe;
+}
+.nonmember-comment strong {
+  display: block;
+  margin-bottom: 6px;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+}
+.comment-action {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #b7cdf0;
+  background: #eff6ff;
+  color: #0b5bd3;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-weight: 700;
+  text-decoration: none;
+}
+.comment-action.pending {
+  border-color: #d5dde8;
+  background: #f6f8fb;
+  color: var(--muted);
+  pointer-events: none;
+}
 .feedback-box {
   border: 1px solid var(--line);
   background: #fbfcfe;
@@ -652,6 +680,11 @@ a {
           <h2>더 필요한 정보가 있으신가요?</h2>
           <p>댓글 남겨 주시면 자료와 논리를 보강하겠습니다.</p>
           <p class="comments-help">제안, 오류 지적, 추가 근거 요청을 남기는 공개 게시판입니다. GitHub 계정으로 댓글을 남길 수 있으며, 의견은 정책 문서 보완 과정에 반영합니다.</p>
+          <div class="nonmember-comment">
+            <strong>비회원 간단 의견</strong>
+            <p class="comments-help">로그인 없이 남길 의견은 별도 무기명 폼으로 받을 수 있습니다. 폼 링크가 연결되면 아래 버튼이 바로 활성화됩니다.</p>
+            <a id="publicCommentFormLink" class="comment-action pending" href="#" aria-disabled="true">비회원 의견 폼 연결 예정</a>
+          </div>
           <div id="commentThread"></div>
         </section>
       </aside>
@@ -661,6 +694,7 @@ a {
 <script>
 const VISITOR_STATS_ENDPOINT = window.DMICU_VISITOR_STATS_ENDPOINT || 'visitor-stats.json';
 const EMS_FEEDBACK_FORM_URL = window.DMICU_EMS_FEEDBACK_FORM_URL || '';
+const PUBLIC_COMMENT_FORM_URL = window.DMICU_PUBLIC_COMMENT_FORM_URL || '';
 function setText(id, value) {
   document.getElementById(id).textContent = value == null || value === '' ? '집계 대기' : String(value);
 }
@@ -690,6 +724,17 @@ function wireEmsFeedbackLink() {
   link.rel = 'noopener noreferrer';
 }
 wireEmsFeedbackLink();
+function wirePublicCommentFormLink() {
+  const link = document.getElementById('publicCommentFormLink');
+  if (!link || !PUBLIC_COMMENT_FORM_URL) return;
+  link.href = PUBLIC_COMMENT_FORM_URL;
+  link.textContent = '비회원으로 간단 의견 남기기';
+  link.classList.remove('pending');
+  link.removeAttribute('aria-disabled');
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+}
+wirePublicCommentFormLink();
 </script>
 <script src="https://utteranc.es/client.js"
   repo="dallgoo119-commits/DMICU"
