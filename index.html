@@ -361,6 +361,50 @@ p { margin: 0 0 14px; }
   color: var(--muted);
   pointer-events: none;
 }
+.anonymous-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.anonymous-form label {
+  display: grid;
+  gap: 4px;
+  color: var(--ink);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+.anonymous-form input,
+.anonymous-form select,
+.anonymous-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cfd8e6;
+  background: #fff;
+  padding: 8px 9px;
+  color: var(--ink);
+  font: 13px/1.45 Arial, "Noto Sans KR", sans-serif;
+}
+.anonymous-form textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+.anonymous-form button {
+  justify-self: start;
+  border: 1px solid #b7cdf0;
+  background: #eff6ff;
+  color: #0b5bd3;
+  padding: 8px 12px;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+.anonymous-form button:disabled {
+  border-color: #d5dde8;
+  background: #f6f8fb;
+  color: var(--muted);
+  cursor: not-allowed;
+}
 .comment-status {
   margin: 8px 0 0;
   color: var(--muted);
@@ -635,9 +679,29 @@ a {
           <p>댓글 남겨 주시면 자료와 논리를 보강하겠습니다.</p>
           <div class="nonmember-comment">
             <strong>비회원 간단 의견 작성</strong>
-            <p class="comments-help">로그인 없이 남길 의견은 무기명 폼으로 받을 수 있습니다. 폼 링크가 연결되면 아래 버튼이 바로 활성화됩니다.</p>
-            <a id="publicCommentFormLink" class="comment-action pending" href="#" aria-disabled="true">비회원 의견 폼 연결 예정</a>
-            <p class="comment-status">정적 GitHub Pages는 비회원 글을 자체 저장할 수 없어 Google Forms, Tally, Typeform 같은 외부 무기명 폼 연결이 필요합니다.</p>
+            <p class="comments-help">로그인 없이 남기는 간단 의견입니다. 이름, 연락처, 소속 기관명은 적지 않아도 됩니다.</p>
+            <form id="publicCommentForm" class="anonymous-form" method="POST">
+              <input type="hidden" name="_subject" value="DMICU 비회원 의견">
+              <input type="hidden" name="_captcha" value="false">
+              <input type="hidden" name="_template" value="table">
+              <label>작성자 구분
+                <select name="작성자 구분">
+                  <option value="비공개">비공개</option>
+                  <option value="구급대원">구급대원</option>
+                  <option value="의료기관 종사자">의료기관 종사자</option>
+                  <option value="시민">시민</option>
+                  <option value="기타">기타</option>
+                </select>
+              </label>
+              <label>지역
+                <input name="지역" type="text" placeholder="예: 광주 서구, 전남 순천, 비공개">
+              </label>
+              <label>의견
+                <textarea name="의견" placeholder="필요한 정보, 오류 지적, 현장 경험, 보강 요청을 적어 주세요." required></textarea>
+              </label>
+              <button id="publicCommentSubmit" type="submit" disabled>비회원 의견 제출 준비 중</button>
+            </form>
+            <p id="publicCommentStatus" class="comment-status">수신 이메일 또는 외부 폼 URL이 연결되면 바로 제출할 수 있습니다.</p>
           </div>
           <p class="comments-help">GitHub 계정이 있는 방문자는 아래 공개 댓글에 제안, 오류 지적, 추가 근거 요청을 남길 수 있습니다.</p>
           <div id="commentThread"></div>
@@ -734,14 +798,18 @@ function wireEmsFeedbackLink() {
 }
 wireEmsFeedbackLink();
 function wirePublicCommentFormLink() {
-  const link = document.getElementById('publicCommentFormLink');
-  if (!link || !PUBLIC_COMMENT_FORM_URL) return;
-  link.href = PUBLIC_COMMENT_FORM_URL;
-  link.textContent = '비회원으로 간단 의견 남기기';
-  link.classList.remove('pending');
-  link.removeAttribute('aria-disabled');
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
+  const form = document.getElementById('publicCommentForm');
+  const submit = document.getElementById('publicCommentSubmit');
+  const status = document.getElementById('publicCommentStatus');
+  if (!form || !submit || !status) return;
+  if (!PUBLIC_COMMENT_FORM_URL) {
+    form.addEventListener('submit', (event) => event.preventDefault());
+    return;
+  }
+  form.action = PUBLIC_COMMENT_FORM_URL;
+  submit.disabled = false;
+  submit.textContent = '비회원 의견 제출';
+  status.textContent = '제출 시 별도 로그인 없이 의견이 전송됩니다. 개인 식별 정보는 적지 않는 것을 권장합니다.';
 }
 wirePublicCommentFormLink();
 </script>
