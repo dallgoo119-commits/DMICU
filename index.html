@@ -693,7 +693,7 @@ a {
             <div class="visitor-card"><strong id="totalVisitors">연동 대기</strong><span>총 접속자 수</span></div>
             <div class="visitor-card"><strong id="todayVisitors">연동 대기</strong><span>오늘 접속자 수</span></div>
           </div>
-          <p class="stats-note" id="visitorStatsNote">정적 GitHub Pages는 자체적으로 실시간 접속자를 저장할 수 없습니다. `visitor-stats.json` 또는 별도 통계 API가 연결되면 이 영역에 수치가 표시됩니다.</p>
+          <p class="stats-note" id="visitorStatsNote">Supabase 방문 집계를 불러오는 중입니다.</p>
 
           <div class="feedback-box">
             <h3>무기명 구급대원 현장 제보</h3>
@@ -806,29 +806,56 @@ a {
   </article>
 </main>
 <script>
-const VISITOR_STATS_ENDPOINT = window.DMICU_VISITOR_STATS_ENDPOINT || 'visitor-stats.json';
 const EMS_FEEDBACK_FORM_URL = window.DMICU_EMS_FEEDBACK_FORM_URL || '';
 const SUPABASE_URL = 'https://vbqkjubanmpcahbctyfk.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_oTQFAvDCSzfqWfRrt9bjrw_ebhSI85e';
-const SUPABASE_COMMENTS_ENDPOINT = `${SUPABASE_URL}/rest/v1/comments`;
+const SUPABASE_REST_ENDPOINT = `${SUPABASE_URL}/rest/v1`;
+const SUPABASE_COMMENTS_ENDPOINT = `${SUPABASE_REST_ENDPOINT}/comments`;
 function setText(id, value) {
   document.getElementById(id).textContent = value == null || value === '' ? '집계 대기' : String(value);
 }
-async function loadVisitorStats() {
+function getOrCreateBrowserId(storage, key) {
+  let value = storage.getItem(key);
+  if (!value) {
+    value = (crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    storage.setItem(key, value);
+  }
+  return value;
+}
+async function supabaseRpc(functionName, payload = {}) {
+  const response = await fetch(`${SUPABASE_REST_ENDPOINT}/rpc/${functionName}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) throw new Error(`Supabase RPC failed: ${response.status}`);
+  return response.json();
+}
+async function loadVisitorStats(recordVisit = false) {
   try {
-    const response = await fetch(VISITOR_STATS_ENDPOINT, { cache: 'no-store' });
-    if (!response.ok) throw new Error('stats not available');
-    const stats = await response.json();
+    const payload = {
+      p_visitor_id: getOrCreateBrowserId(localStorage, 'dmicu_visitor_id'),
+      p_session_id: getOrCreateBrowserId(sessionStorage, 'dmicu_session_id'),
+      p_page_path: location.pathname || '/'
+    };
+    const rows = recordVisit
+      ? await supabaseRpc('record_page_visit', payload)
+      : await supabaseRpc('get_page_visit_stats');
+    const stats = Array.isArray(rows) ? rows[0] : rows;
     setText('activeVisitors', stats.active);
     setText('totalVisitors', stats.total);
     setText('todayVisitors', stats.today);
-    const updated = stats.updated_at ? `최근 업데이트: ${stats.updated_at}` : '통계 API가 연결되면 자동 갱신됩니다.';
-    document.getElementById('visitorStatsNote').textContent = updated;
+    document.getElementById('visitorStatsNote').textContent = '현재 접속자는 최근 5분 이내 접속 세션 기준이며, 총/오늘 수치는 브라우저별 익명 방문자 기준입니다.';
   } catch (error) {
-    document.getElementById('visitorStatsNote').textContent = '정적 GitHub Pages는 자체적으로 실시간 접속자를 저장할 수 없습니다. Cloudflare Worker, Firebase, GoatCounter 등 통계 엔드포인트를 연결하면 현재 접속자와 총 접속자를 표시할 수 있습니다.';
+    document.getElementById('visitorStatsNote').textContent = '방문 집계 테이블 또는 RPC 함수가 아직 Supabase에 생성되지 않았습니다. supabase_visitor_stats.sql을 실행하면 자동 표시됩니다.';
   }
 }
-loadVisitorStats();
+loadVisitorStats(true);
+setInterval(() => loadVisitorStats(true), 60000);
 function wireEmsFeedbackLink() {
   const link = document.getElementById('emsFeedbackLink');
   if (!link || !EMS_FEEDBACK_FORM_URL) return;
