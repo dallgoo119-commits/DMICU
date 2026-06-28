@@ -29,6 +29,8 @@ body {
   color: var(--ink);
   font-family: Georgia, "Times New Roman", "Noto Serif KR", serif;
   line-height: 1.68;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .journal-bar {
   background: #ffffff;
@@ -84,11 +86,14 @@ h1 {
   line-height: 1.18;
   font-weight: 700;
   letter-spacing: 0;
+  max-width: 980px;
+  text-wrap: balance;
 }
 .authors {
   margin: 0;
   color: #394452;
   font-size: 17px;
+  max-width: 960px;
 }
 .subtitle {
   margin: 0 0 8px;
@@ -96,6 +101,8 @@ h1 {
   font-size: 21px;
   line-height: 1.4;
   font-weight: 700;
+  max-width: 980px;
+  text-wrap: balance;
 }
 .affiliation {
   margin-top: 6px;
@@ -120,11 +127,14 @@ h2 {
   margin: 30px 0 9px;
   font-size: 23px;
   line-height: 1.25;
+  text-wrap: balance;
 }
 h2:first-child { margin-top: 0; }
 h3 {
   margin: 22px 0 6px;
   font-size: 18px;
+  line-height: 1.35;
+  text-wrap: balance;
 }
 p { margin: 0 0 14px; }
 .summary {
@@ -153,10 +163,15 @@ p { margin: 0 0 14px; }
   border: 1px solid var(--line);
   padding: 16px 17px;
   margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.62;
 }
 .panel h2, .panel h3 {
   margin-top: 0;
   color: var(--policy-red);
+}
+.panel h2 {
+  font-size: 18px;
 }
 .panel ul {
   margin: 0;
@@ -204,7 +219,7 @@ p { margin: 0 0 14px; }
 }
 .map-frame {
   width: 100%;
-  height: 1460px;
+  height: 1180px;
   border: 1px solid var(--line);
   display: block;
 }
@@ -329,6 +344,13 @@ p { margin: 0 0 14px; }
   background: #fff;
   border: 1px solid var(--line);
   border-top: 4px solid var(--policy-red);
+  padding: 18px 22px 20px;
+}
+.comment-panel h2 {
+  margin: 0 0 8px;
+  color: var(--policy-red);
+  font-size: 24px;
+  line-height: 1.25;
 }
 .comment-panel p {
   font-size: 14px;
@@ -381,7 +403,7 @@ p { margin: 0 0 14px; }
   box-sizing: border-box;
   border: 1px solid #cfd8e6;
   background: #fff;
-  padding: 8px 9px;
+  padding: 10px 11px;
   color: var(--ink);
   font: 13px/1.45 Arial, "Noto Sans KR", sans-serif;
 }
@@ -394,7 +416,7 @@ p { margin: 0 0 14px; }
   border: 1px solid #b7cdf0;
   background: #eff6ff;
   color: #0b5bd3;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-family: Arial, "Noto Sans KR", sans-serif;
   font-weight: 700;
   cursor: pointer;
@@ -464,7 +486,25 @@ a {
   .metrics { grid-template-columns: 1fr 1fr; }
   .monitoring-grid { grid-template-columns: 1fr; }
   .visitor-grid { grid-template-columns: 1fr; }
-  .map-frame { height: 1180px; }
+  .summary-row { grid-template-columns: 1fr; gap: 4px; }
+  .comment-panel { padding: 16px 16px 18px; }
+  .map-frame { height: 920px; }
+}
+@media (max-width: 640px) {
+  .page { padding: 0 12px; margin-top: 14px; }
+  .journal-inner { padding: 14px 16px 12px; }
+  .brand { font-size: 24px; line-height: 1.2; }
+  .content { padding: 22px 18px 28px; }
+  .article-head { padding: 24px 18px 20px; }
+  h1 { font-size: 27px; line-height: 1.22; }
+  .subtitle { font-size: 18px; }
+  .metrics { grid-template-columns: 1fr; }
+  .data-schema {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .map-frame { height: 760px; }
 }
 @media print {
   body { background: white; }
