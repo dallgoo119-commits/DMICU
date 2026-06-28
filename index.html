@@ -274,6 +274,65 @@ p { margin: 0 0 14px; }
 .references ol {
   padding-left: 20px;
 }
+.engagement {
+  border-top: 4px solid #111827;
+  margin-top: 34px;
+  padding-top: 18px;
+}
+.engagement h2 {
+  margin-top: 0;
+}
+.visitor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 12px 0 12px;
+}
+.visitor-card {
+  border: 1px solid var(--line);
+  background: #fbfcfe;
+  padding: 13px 14px;
+}
+.visitor-card strong {
+  display: block;
+  color: #111827;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 24px;
+  line-height: 1.1;
+}
+.visitor-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.stats-note {
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  border-left: 4px solid var(--policy-red);
+  background: #fff7f8;
+  color: #3f4b5a;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.comments-box {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 14px 16px;
+}
+.comments-box h3 {
+  margin-top: 0;
+}
+.comments-help {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
 a {
   color: var(--accent);
   text-decoration: none;
@@ -288,6 +347,7 @@ a {
   .aside { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 22px; }
   .metrics { grid-template-columns: 1fr 1fr; }
   .monitoring-grid { grid-template-columns: 1fr; }
+  .visitor-grid { grid-template-columns: 1fr; }
   .map-frame { height: 1180px; }
 }
 @media print {
@@ -466,6 +526,23 @@ a {
             <li>국립중앙의료원 중앙응급의료센터, 2024 응급의료 통계연보.</li>
           </ol>
         </section>
+
+        <section class="engagement" aria-labelledby="engagement-title">
+          <h2 id="engagement-title">Public Engagement</h2>
+          <p>이 페이지는 공람용 문서이므로 방문 현황과 공개 의견을 함께 축적해 정책 논의의 확산 정도를 확인할 수 있도록 한다.</p>
+          <div class="visitor-grid" aria-label="접속 통계">
+            <div class="visitor-card"><strong id="activeVisitors">연동 대기</strong><span>현재 접속자 수</span></div>
+            <div class="visitor-card"><strong id="totalVisitors">연동 대기</strong><span>총 접속자 수</span></div>
+            <div class="visitor-card"><strong id="todayVisitors">연동 대기</strong><span>오늘 접속자 수</span></div>
+          </div>
+          <p class="stats-note" id="visitorStatsNote">정적 GitHub Pages는 자체적으로 실시간 접속자를 저장할 수 없습니다. `visitor-stats.json` 또는 별도 통계 API가 연결되면 이 영역에 수치가 표시됩니다.</p>
+
+          <div class="comments-box">
+            <h3>Public Comments</h3>
+            <p class="comments-help">방문자는 GitHub 계정으로 의견을 남길 수 있습니다. 댓글은 공개 이슈로 보존되어 정책 제안의 근거와 반론을 함께 축적합니다.</p>
+            <div id="commentThread"></div>
+          </div>
+        </section>
       </section>
 
       <aside class="aside">
@@ -526,5 +603,34 @@ a {
     </div>
   </article>
 </main>
+<script>
+const VISITOR_STATS_ENDPOINT = window.DMICU_VISITOR_STATS_ENDPOINT || 'visitor-stats.json';
+function setText(id, value) {
+  document.getElementById(id).textContent = value == null || value === '' ? '집계 대기' : String(value);
+}
+async function loadVisitorStats() {
+  try {
+    const response = await fetch(VISITOR_STATS_ENDPOINT, { cache: 'no-store' });
+    if (!response.ok) throw new Error('stats not available');
+    const stats = await response.json();
+    setText('activeVisitors', stats.active);
+    setText('totalVisitors', stats.total);
+    setText('todayVisitors', stats.today);
+    const updated = stats.updated_at ? `최근 업데이트: ${stats.updated_at}` : '통계 API가 연결되면 자동 갱신됩니다.';
+    document.getElementById('visitorStatsNote').textContent = updated;
+  } catch (error) {
+    document.getElementById('visitorStatsNote').textContent = '정적 GitHub Pages는 자체적으로 실시간 접속자를 저장할 수 없습니다. Cloudflare Worker, Firebase, GoatCounter 등 통계 엔드포인트를 연결하면 현재 접속자와 총 접속자를 표시할 수 있습니다.';
+  }
+}
+loadVisitorStats();
+</script>
+<script src="https://utteranc.es/client.js"
+  repo="dallgoo119-commits/DMICU"
+  issue-term="pathname"
+  label="public-comment"
+  theme="github-light"
+  crossorigin="anonymous"
+  async>
+</script>
 </body>
 </html>
