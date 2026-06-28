@@ -318,20 +318,20 @@ p { margin: 0 0 14px; }
   font-size: 13px;
   line-height: 1.55;
 }
-.comments-box {
-  border: 1px solid var(--line);
-  background: #fff;
-  padding: 14px 16px;
-}
-.comments-box h3 {
-  margin-top: 0;
-}
 .comments-help {
   margin-bottom: 12px;
   color: var(--muted);
   font-family: Arial, "Noto Sans KR", sans-serif;
   font-size: 13px;
   line-height: 1.55;
+}
+.comment-panel {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--policy-red);
+}
+.comment-panel p {
+  font-size: 14px;
 }
 .feedback-box {
   border: 1px solid var(--line);
@@ -591,11 +591,6 @@ a {
             <p class="feedback-note">Google Forms, Tally, Typeform 등에서 이메일 수집·로그인 요구·IP 수집을 끈 무기명 설문을 만든 뒤 링크를 연결하면 됩니다.</p>
           </div>
 
-          <div class="comments-box">
-            <h3>Public Comments</h3>
-            <p class="comments-help">방문자는 GitHub 계정으로 의견을 남길 수 있습니다. 댓글은 공개 이슈로 보존되어 정책 제안의 근거와 반론을 함께 축적합니다.</p>
-            <div id="commentThread"></div>
-          </div>
         </section>
       </section>
 
@@ -652,6 +647,12 @@ a {
         <section class="panel">
           <h2>Decision Point</h2>
           <p>전남·광주 통합특별시는 “각 응급실이 최종치료를 할 수 있는가”가 아니라 “어느 node에서 초기 최소안정화 damage control을 하고, 목포·순천에서 완결 가능한 80%와 전남대병원으로 보내야 할 20%를 얼마나 빠르게 구분·연결할 것인가”를 기준으로 응급의료체계를 재편해야 한다.</p>
+        </section>
+        <section class="panel comment-panel">
+          <h2>더 필요한 정보가 있으신가요?</h2>
+          <p>댓글 남겨 주시면 자료와 논리를 보강하겠습니다.</p>
+          <p class="comments-help">제안, 오류 지적, 추가 근거 요청을 남기는 공개 게시판입니다. GitHub 계정으로 댓글을 남길 수 있으며, 의견은 정책 문서 보완 과정에 반영합니다.</p>
+          <div id="commentThread"></div>
         </section>
       </aside>
     </div>
