@@ -449,48 +449,6 @@ p { margin: 0 0 14px; }
   font-size: 12px;
   line-height: 1.45;
 }
-.feedback-box {
-  border: 1px solid var(--line);
-  background: #fbfcfe;
-  padding: 14px 16px;
-  margin: 0 0 18px;
-}
-.feedback-box h3 {
-  margin-top: 0;
-}
-.feedback-box ul {
-  margin: 8px 0 12px;
-  padding-left: 20px;
-}
-.feedback-box li {
-  margin-bottom: 6px;
-}
-.feedback-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  padding: 8px 13px;
-  border: 1px solid var(--policy-red);
-  background: var(--policy-red);
-  color: #fff;
-  font-family: Arial, "Noto Sans KR", sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-}
-.feedback-action.pending {
-  border-color: #d0d5dd;
-  background: #f3f5f8;
-  color: #667085;
-  cursor: default;
-}
-.feedback-note {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-family: Arial, "Noto Sans KR", sans-serif;
-  font-size: 13px;
-  line-height: 1.55;
-}
 a {
   color: var(--accent);
   text-decoration: none;
@@ -695,59 +653,47 @@ a {
           </div>
           <p class="stats-note" id="visitorStatsNote">Supabase 방문 집계를 불러오는 중입니다.</p>
 
-          <div class="feedback-box">
-            <h3>무기명 구급대원 현장 제보</h3>
-            <p>광주·전남 구급대원이 이송 과정에서 경험하는 병원 미수용, 반복 전화 확인, 배후진료 부재, 소아·외상·중증응급 수용 제한, 전원조정 지연 등의 불만 사항을 무기명으로 수집한다.</p>
-            <ul>
-              <li>이름, 연락처, 소속 센터명, 차량번호 등 개인 식별 정보는 수집하지 않는다.</li>
-              <li>구 단위 또는 권역 단위, 시간대, 질환군, 수용 거절 사유, 이송 지연 시간, 개선 제안을 중심으로 수집한다.</li>
-              <li>원자료는 비공개로 보관하고, 공개 보고서에는 개인·기관 식별 가능성을 낮춘 집계와 익명화 사례만 반영한다.</li>
-            </ul>
-            <a id="emsFeedbackLink" class="feedback-action pending" href="#" aria-disabled="true">무기명 설문 링크 연결 예정</a>
-            <p class="feedback-note">Google Forms, Tally, Typeform 등에서 이메일 수집·로그인 요구·IP 수집을 끈 무기명 설문을 만든 뒤 링크를 연결하면 됩니다.</p>
+          <div class="comment-panel">
+            <h2>더 필요한 정보가 있으신가요?</h2>
+            <p>댓글 남겨 주시면 자료와 논리를 보강하겠습니다.</p>
+            <div class="nonmember-comment">
+              <strong>비회원 간단 의견 작성</strong>
+              <p class="comments-help">로그인 없이 남기는 간단 의견입니다. 이름, 연락처, 소속 기관명은 적지 않아도 됩니다.</p>
+              <form id="publicCommentForm" class="anonymous-form" method="POST">
+                <input type="hidden" name="_subject" value="DMICU 비회원 의견">
+                <input type="hidden" name="_captcha" value="false">
+                <input type="hidden" name="_template" value="table">
+                <label>작성자 구분
+                  <select name="작성자 구분">
+                    <option value="비공개">비공개</option>
+                    <option value="구급대원">구급대원</option>
+                    <option value="의료기관 종사자">의료기관 종사자</option>
+                    <option value="시민">시민</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </label>
+                <label>지역
+                  <input name="지역" type="text" placeholder="예: 광주 서구, 전남 순천, 비공개">
+                </label>
+                <label>의견
+                  <textarea name="의견" maxlength="2000" placeholder="필요한 정보, 오류 지적, 현장 경험, 보강 요청을 적어 주세요." required></textarea>
+                </label>
+                <button id="publicCommentSubmit" type="submit">비회원 의견 남기기</button>
+              </form>
+              <p id="publicCommentStatus" class="comment-status">제출하면 아래 게시판에 바로 표시되고, 다른 방문자에게도 공유됩니다.</p>
+              <div class="local-comment-board" aria-live="polite">
+                <h3>비회원 의견 게시판</h3>
+                <div id="localCommentList" class="local-comment-list"></div>
+              </div>
+            </div>
+            <p class="comments-help">GitHub 계정이 있는 방문자는 아래 공개 댓글에 제안, 오류 지적, 추가 근거 요청을 남길 수 있습니다.</p>
+            <div id="commentThread"></div>
           </div>
 
         </section>
       </section>
 
       <aside class="aside">
-        <section class="panel comment-panel">
-          <h2>더 필요한 정보가 있으신가요?</h2>
-          <p>댓글 남겨 주시면 자료와 논리를 보강하겠습니다.</p>
-          <div class="nonmember-comment">
-            <strong>비회원 간단 의견 작성</strong>
-            <p class="comments-help">로그인 없이 남기는 간단 의견입니다. 이름, 연락처, 소속 기관명은 적지 않아도 됩니다.</p>
-            <form id="publicCommentForm" class="anonymous-form" method="POST">
-              <input type="hidden" name="_subject" value="DMICU 비회원 의견">
-              <input type="hidden" name="_captcha" value="false">
-              <input type="hidden" name="_template" value="table">
-              <label>작성자 구분
-                <select name="작성자 구분">
-                  <option value="비공개">비공개</option>
-                  <option value="구급대원">구급대원</option>
-                  <option value="의료기관 종사자">의료기관 종사자</option>
-                  <option value="시민">시민</option>
-                  <option value="기타">기타</option>
-                </select>
-              </label>
-              <label>지역
-                <input name="지역" type="text" placeholder="예: 광주 서구, 전남 순천, 비공개">
-              </label>
-              <label>의견
-                <textarea name="의견" maxlength="2000" placeholder="필요한 정보, 오류 지적, 현장 경험, 보강 요청을 적어 주세요." required></textarea>
-              </label>
-              <button id="publicCommentSubmit" type="submit">비회원 의견 남기기</button>
-            </form>
-            <p id="publicCommentStatus" class="comment-status">제출하면 아래 게시판에 바로 표시되고, 다른 방문자에게도 공유됩니다.</p>
-            <div class="local-comment-board" aria-live="polite">
-              <h3>비회원 의견 게시판</h3>
-              <div id="localCommentList" class="local-comment-list"></div>
-            </div>
-          </div>
-          <p class="comments-help">GitHub 계정이 있는 방문자는 아래 공개 댓글에 제안, 오류 지적, 추가 근거 요청을 남길 수 있습니다.</p>
-          <div id="commentThread"></div>
-        </section>
-
         <section class="panel">
           <h2>Key Messages</h2>
           <ul>
@@ -806,7 +752,6 @@ a {
   </article>
 </main>
 <script>
-const EMS_FEEDBACK_FORM_URL = window.DMICU_EMS_FEEDBACK_FORM_URL || '';
 const SUPABASE_URL = 'https://vbqkjubanmpcahbctyfk.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_oTQFAvDCSzfqWfRrt9bjrw_ebhSI85e';
 const SUPABASE_REST_ENDPOINT = `${SUPABASE_URL}/rest/v1`;
@@ -856,17 +801,6 @@ async function loadVisitorStats(recordVisit = false) {
 }
 loadVisitorStats(true);
 setInterval(() => loadVisitorStats(true), 60000);
-function wireEmsFeedbackLink() {
-  const link = document.getElementById('emsFeedbackLink');
-  if (!link || !EMS_FEEDBACK_FORM_URL) return;
-  link.href = EMS_FEEDBACK_FORM_URL;
-  link.textContent = '무기명 현장 제보 남기기';
-  link.classList.remove('pending');
-  link.removeAttribute('aria-disabled');
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-}
-wireEmsFeedbackLink();
 function wirePublicCommentFormLink() {
   const form = document.getElementById('publicCommentForm');
   const submit = document.getElementById('publicCommentSubmit');
