@@ -405,6 +405,43 @@ p { margin: 0 0 14px; }
   color: var(--muted);
   cursor: not-allowed;
 }
+.local-comment-board {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.local-comment-board h3 {
+  margin: 0 0 8px;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+}
+.local-comment-list {
+  display: grid;
+  gap: 8px;
+}
+.local-comment-empty {
+  color: var(--muted);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 12px;
+}
+.local-comment-item {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 9px 10px;
+}
+.local-comment-meta {
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 11px;
+}
+.local-comment-body {
+  white-space: pre-wrap;
+  color: var(--ink);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
 .comment-status {
   margin: 8px 0 0;
   color: var(--muted);
@@ -699,9 +736,13 @@ a {
               <label>의견
                 <textarea name="의견" placeholder="필요한 정보, 오류 지적, 현장 경험, 보강 요청을 적어 주세요." required></textarea>
               </label>
-              <button id="publicCommentSubmit" type="submit" disabled>비회원 의견 제출 준비 중</button>
+              <button id="publicCommentSubmit" type="submit">비회원 의견 남기기</button>
             </form>
-            <p id="publicCommentStatus" class="comment-status">수신 이메일 또는 외부 폼 URL이 연결되면 바로 제출할 수 있습니다.</p>
+            <p id="publicCommentStatus" class="comment-status">제출하면 아래 게시판에 바로 표시됩니다. 현재 정적 페이지 방식이라 다른 방문자와 공유되는 공개 저장은 별도 서버 연결이 필요합니다.</p>
+            <div class="local-comment-board" aria-live="polite">
+              <h3>비회원 의견 게시판</h3>
+              <div id="localCommentList" class="local-comment-list"></div>
+            </div>
           </div>
           <p class="comments-help">GitHub 계정이 있는 방문자는 아래 공개 댓글에 제안, 오류 지적, 추가 근거 요청을 남길 수 있습니다.</p>
           <div id="commentThread"></div>
@@ -768,6 +809,7 @@ a {
 const VISITOR_STATS_ENDPOINT = window.DMICU_VISITOR_STATS_ENDPOINT || 'visitor-stats.json';
 const EMS_FEEDBACK_FORM_URL = window.DMICU_EMS_FEEDBACK_FORM_URL || '';
 const PUBLIC_COMMENT_FORM_URL = window.DMICU_PUBLIC_COMMENT_FORM_URL || '';
+const LOCAL_COMMENT_STORAGE_KEY = 'dmicu_public_comments_v1';
 function setText(id, value) {
   document.getElementById(id).textContent = value == null || value === '' ? '집계 대기' : String(value);
 }
@@ -802,16 +844,74 @@ function wirePublicCommentFormLink() {
   const submit = document.getElementById('publicCommentSubmit');
   const status = document.getElementById('publicCommentStatus');
   if (!form || !submit || !status) return;
-  if (!PUBLIC_COMMENT_FORM_URL) {
-    form.addEventListener('submit', (event) => event.preventDefault());
-    return;
+  form.addEventListener('submit', (event) => {
+    if (PUBLIC_COMMENT_FORM_URL) return;
+    event.preventDefault();
+    const formData = new FormData(form);
+    const body = String(formData.get('의견') || '').trim();
+    if (!body) return;
+    const item = {
+      role: String(formData.get('작성자 구분') || '비공개'),
+      region: String(formData.get('지역') || '비공개').trim() || '비공개',
+      body,
+      createdAt: new Date().toISOString()
+    };
+    const comments = readLocalComments();
+    comments.unshift(item);
+    localStorage.setItem(LOCAL_COMMENT_STORAGE_KEY, JSON.stringify(comments.slice(0, 30)));
+    renderLocalComments();
+    form.reset();
+    status.textContent = '의견이 아래 게시판에 추가되었습니다. 이 브라우저에서는 새로고침 후에도 유지됩니다.';
+  });
+  if (PUBLIC_COMMENT_FORM_URL) {
+    form.action = PUBLIC_COMMENT_FORM_URL;
+    submit.textContent = '비회원 의견 제출';
+    status.textContent = '제출 시 별도 로그인 없이 의견이 전송됩니다. 개인 식별 정보는 적지 않는 것을 권장합니다.';
   }
-  form.action = PUBLIC_COMMENT_FORM_URL;
-  submit.disabled = false;
-  submit.textContent = '비회원 의견 제출';
-  status.textContent = '제출 시 별도 로그인 없이 의견이 전송됩니다. 개인 식별 정보는 적지 않는 것을 권장합니다.';
 }
 wirePublicCommentFormLink();
+function readLocalComments() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LOCAL_COMMENT_STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+function formatLocalCommentDate(value) {
+  try {
+    return new Intl.DateTimeFormat('ko-KR', {
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
+  } catch (error) {
+    return '';
+  }
+}
+function renderLocalComments() {
+  const list = document.getElementById('localCommentList');
+  if (!list) return;
+  const comments = readLocalComments();
+  if (!comments.length) {
+    list.innerHTML = '<p class="local-comment-empty">아직 남겨진 의견이 없습니다.</p>';
+    return;
+  }
+  list.replaceChildren(...comments.map((comment) => {
+    const item = document.createElement('article');
+    item.className = 'local-comment-item';
+    const meta = document.createElement('div');
+    meta.className = 'local-comment-meta';
+    meta.textContent = `${comment.role || '비공개'} · ${comment.region || '비공개'} · ${formatLocalCommentDate(comment.createdAt)}`;
+    const body = document.createElement('div');
+    body.className = 'local-comment-body';
+    body.textContent = comment.body || '';
+    item.append(meta, body);
+    return item;
+  }));
+}
+renderLocalComments();
 </script>
 <script src="https://utteranc.es/client.js"
   repo="dallgoo119-commits/DMICU"
