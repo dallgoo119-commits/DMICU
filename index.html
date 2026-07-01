@@ -68,6 +68,54 @@ body {
   border: 1px solid var(--line);
   box-shadow: 0 18px 40px rgba(16, 24, 40, .08);
 }
+.paper + .paper {
+  margin-top: 26px;
+}
+.report-nav {
+  max-width: 1220px;
+  margin: 18px auto 0;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.report-nav a {
+  display: block;
+  min-height: 88px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--policy-red);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(16, 24, 40, .06);
+}
+.report-nav strong {
+  display: block;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 13px;
+  color: var(--policy-red);
+  margin-bottom: 4px;
+}
+.report-nav span {
+  display: block;
+  font-size: 17px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+.page-link {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--policy-red);
+  color: var(--ink);
+  background: #fff;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
 .article-head {
   padding: 36px 42px 26px;
   border-bottom: 1px solid var(--line);
@@ -296,6 +344,32 @@ p { margin: 0 0 14px; }
   font-size: 13px;
   line-height: 1.45;
 }
+.ccat-flow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 18px 0 22px;
+}
+.ccat-flow div {
+  border: 1px solid var(--line);
+  background: #fbfcfe;
+  padding: 12px;
+  min-height: 106px;
+}
+.ccat-flow strong {
+  display: block;
+  color: var(--policy-red);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.ccat-flow span {
+  display: block;
+  color: var(--muted);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+}
 .data-schema {
   width: 100%;
   border-collapse: collapse;
@@ -512,12 +586,14 @@ a {
 @media (max-width: 980px) {
   .journal-inner { align-items: start; flex-direction: column; }
   .issue { text-align: left; }
+  .report-nav { grid-template-columns: 1fr; }
   .content { grid-template-columns: 1fr; padding: 26px 24px 32px; }
   .article-head { padding: 28px 24px 22px; }
   h1 { font-size: 30px; }
   .aside { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 22px; }
   .metrics { grid-template-columns: 1fr 1fr; }
   .monitoring-grid { grid-template-columns: 1fr; }
+  .ccat-flow { grid-template-columns: 1fr 1fr; }
   .visitor-grid { grid-template-columns: 1fr; }
   .summary-row { grid-template-columns: 1fr; gap: 4px; }
   .comment-panel { padding: 16px 16px 18px; }
@@ -525,6 +601,7 @@ a {
 }
 @media (max-width: 640px) {
   .page { padding: 0 12px; margin-top: 14px; }
+  .report-nav { padding: 0 12px; }
   .journal-inner { padding: 14px 16px 12px; }
   .brand { font-size: 24px; line-height: 1.2; }
   .content { padding: 22px 18px 28px; }
@@ -532,6 +609,7 @@ a {
   h1 { font-size: 27px; line-height: 1.22; }
   .subtitle { font-size: 18px; }
   .metrics { grid-template-columns: 1fr; }
+  .ccat-flow { grid-template-columns: 1fr; }
   .data-schema {
     display: block;
     overflow-x: auto;
@@ -557,10 +635,21 @@ a {
   </div>
 </header>
 
+<nav class="report-nav" aria-label="보고서 페이지 이동">
+  <a href="#part-1">
+    <strong>제1부</strong>
+    <span>응급의료기관 기능 재편과 완결응급의료 Trinity 전략</span>
+  </a>
+  <a href="#part-2">
+    <strong>제2부</strong>
+    <span>본부 직할 Critical Care Ambulance Team 신설 제안</span>
+  </a>
+</nav>
+
 <main class="page">
-  <article class="paper">
+  <article class="paper" id="part-1">
     <header class="article-head">
-      <div class="section-tag">Health Policy</div>
+      <div class="section-tag">Part 1 | Health Policy</div>
       <h1>전남·광주 통합특별시 응급의료기관 기능 재편과 완결응급의료 Trinity 전략</h1>
       <p class="subtitle">순천·목포 혹은 여수 배후 거점 종합병원의 의도적 미완결 배후진료 설계의 필요성</p>
       <p class="authors">전남대병원 극최종치료 거점, 목포·순천 80% 의도적 완결 거점, 전남 초기 최소안정화 damage-control node를 연결하는 계층형 광역 응급의료체계 재설계</p>
@@ -705,6 +794,7 @@ a {
         <h2>Policy Recommendation</h2>
         <p>전남·광주 통합특별시 응급의료정책은 광주 내부 응급실 수 조정에 머물러서는 안 된다. 전남대병원을 100% 극최종치료 거점으로, 목포와 순천을 80% 이상 권역 완결 거점으로 강화하고, 전남 전방 응급실을 damage-control node로 재정의하는 광역 완결응급의료 체계로 설계해야 한다.</p>
         <p>정책의 핵심은 모든 지역응급의료기관을 최종치료 병원처럼 유지하는 것이 아니라, 환자가 최종치료 가능 병원에 도달하기 전까지 생리학적 악화를 막는 전방 안정화 기능과, 목포·순천에서 의도적으로 남겨둔 20%의 고난도 중증환자를 전남대병원으로 연결하는 이송·전원망을 동시에 작동시키는 것이다. MICU는 0.1% 초중증 환자를 위한 핵심 수단이지만, 그 기능은 99.9% 병원간 전원환자를 준-MICU와 일반 구급차가 안정적으로 연결할 때 비로소 정상화된다.</p>
+        <a class="page-link" href="#part-2">다음: 본부 직할 Critical Care Ambulance Team 신설 제안</a>
 
         <section class="references">
           <h2>References and Data Sources</h2>
@@ -817,6 +907,133 @@ a {
         <section class="panel">
           <h2>Decision Point</h2>
           <p>전남·광주 통합특별시는 “각 응급실이 최종치료를 할 수 있는가”가 아니라 “어느 node에서 초기 최소안정화 damage control을 하고, 목포·순천에서 완결 가능한 80%와 전남대병원으로 보내야 할 20%를 얼마나 빠르게 구분·연결할 것인가”를 기준으로 응급의료체계를 재편해야 한다.</p>
+        </section>
+      </aside>
+    </div>
+  </article>
+
+  <article class="paper" id="part-2">
+    <header class="article-head">
+      <div class="section-tag">Part 2 | Prehospital Critical Care</div>
+      <h1>광주·전남 통합특별시 본부 직할 Critical Care Ambulance Team 신설 제안</h1>
+      <p class="subtitle">임상역량 평가 기반 독립 전문구급대와 DMICU 연계형 병원 전 중환자 대응 모델</p>
+      <p class="authors">일반 구급대와 분리된 본부 직할 전문 기동팀을 권역별로 운영하여 고위험·저빈도 초중증 환자를 조기에 식별하고, 전방 응급거점·DMICU·권역 거점병원으로 정확히 연결하는 제안</p>
+      <div class="affiliation">제안 범위: 광주 5개 구 및 전남 권역형 배치, 외부 임상역량 평가, 119 상황실·의료지도·거점병원 핫라인 연계</div>
+    </header>
+
+    <div class="content">
+      <section class="main">
+        <section class="summary">
+          <h2>Structured Summary</h2>
+          <div class="summary-row">
+            <strong>Proposal</strong>
+            <p>광주·전남 통합특별시 소방본부 직할로 Critical Care Ambulance Team, 이하 CCAT을 신설하고 일반 119구급대와 분리된 독립 전문구급대로 운영한다.</p>
+          </div>
+          <div class="summary-row">
+            <strong>Purpose</strong>
+            <p>심정지, 중증외상, 쇼크, 호흡부전, 중증소아, 고위험 산과 등 고위험·저빈도 사건에 임상역량 평가를 통과한 전문 인력을 선택적으로 투입한다.</p>
+          </div>
+          <div class="summary-row">
+            <strong>System Role</strong>
+            <p>CCAT은 일반 구급대의 상급 서열이 아니라, 현장 선별·고난도 처치·이송 병원 결정·DMICU 전환 판단을 담당하는 본부 직할 전문 기동 자원이다.</p>
+          </div>
+          <div class="summary-row">
+            <strong>Governance</strong>
+            <p>선발과 재인증은 소방 내부 추천만으로 하지 않고, 권역응급의료센터, 응급의학과 전문의, 시뮬레이션 교육기관이 참여하는 외부 임상평가 체계로 운영한다.</p>
+          </div>
+        </section>
+
+        <div class="metrics">
+          <div class="metric"><strong>본부 직할</strong><span>일선 센터가 아닌 통합특별시 소방본부 전문대 편성</span></div>
+          <div class="metric"><strong>구·권역별</strong><span>광주 도심권과 전남 동·서·남부권 기동 배치</span></div>
+          <div class="metric"><strong>고위험</strong><span>심정지·중증외상·쇼크·호흡부전 등 선택 출동</span></div>
+          <div class="metric"><strong>재인증</strong><span>시뮬레이션·케이스 리뷰 기반 정기 역량 갱신</span></div>
+        </div>
+
+        <h2>1. 제안 취지</h2>
+        <p>광주·전남 통합특별시 응급의료 전략은 병원 중심의 거점 재편만으로 완성될 수 없다. 중증환자의 예후는 병원 도착 이후뿐 아니라, 신고 접수 이후 현장에서 어떤 인력이 환자를 평가하고, 어떤 수준의 처치를 제공하며, 어느 병원으로 이송할지를 결정하는 병원 전 단계에서 이미 크게 좌우된다.</p>
+        <p>따라서 통합특별시 출범을 계기로 일반 119구급대와 별도로 운영되는 본부 직할 전문 기동형 구급대, 즉 Critical Care Ambulance Team을 신설할 필요가 있다. CCAT은 일반 구급대의 상위 서열이 아니라, 고위험·저빈도 중증 응급상황에 선택적으로 투입되는 전문 대응 자원이다.</p>
+
+        <h2>2. 현행 체계의 한계</h2>
+        <p>현재 구급체계는 출동 건수 처리 중심으로 운영되는 경향이 강하다. 그러나 실제 응급환자는 경증 반복 출동부터 심정지, 중증외상, 쇼크, 호흡부전, 중증소아, 고위험 산과 응급까지 위험도와 처치 난이도가 크게 다르다.</p>
+        <p><span class="spectrum-highlight critical">모든 구급대가 동일한 방식으로 모든 환자를 담당하는 구조에서는 초중증 환자에게 필요한 전문 처치와 병원 선정, 의료지도 연계가 일관되게 이루어지기 어렵다.</span> 특히 광주·전남은 대도시, 농어촌, 도서·산간 지역이 함께 존재하는 권역이므로 병원 전 단계에서 초중증 환자를 빠르게 식별하고 적절한 거점으로 연결하는 별도 전문팀이 필요하다.</p>
+
+        <h2>3. 핵심 제안</h2>
+        <p>광주·전남 통합특별시 소방본부 직할로 Critical Care Ambulance Team을 신설한다. CCAT은 각 구·권역별로 배치하되, 일반 경증·반복 출동에는 투입하지 않는다. 대신 심정지, 중증외상, 쇼크, 호흡부전, 의식저하, 중증소아, 고위험 산과, 다수사상자 등 고위험·저빈도 사건에 선택적으로 출동한다.</p>
+        <div class="quote"><span class="spectrum-highlight critical">CCAT은 일반 구급대를 대체하는 조직이 아니라, 일반 구급대가 감당하기 어려운 초중증 환자를 지원하고 DMICU 체계로 연결하는 본부 직할 전문 기동대다.</span></div>
+
+        <div class="ccat-flow" aria-label="CCAT 작동 흐름">
+          <div><strong>1. 중증도 식별</strong><span>신고 키워드, 상황실 판단, 현장 구급대 요청을 통해 CCAT 투입 대상을 조기 선별한다.</span></div>
+          <div><strong>2. 전문팀 출동</strong><span>임상역량 평가를 통과한 전문 인력이 고위험·저빈도 사건에 선택적으로 투입된다.</span></div>
+          <div><strong>3. 처치·연결</strong><span>고난도 처치, 의료지도 연결, 거점병원 핫라인, DMICU 또는 준-MICU 전환 판단을 수행한다.</span></div>
+          <div><strong>4. 리뷰·개선</strong><span>출동 후 케이스 리뷰를 통해 프로토콜, 교육, 품질관리 지표를 지속적으로 갱신한다.</span></div>
+        </div>
+
+        <h2>4. 임상역량 평가 기반 선발</h2>
+        <p>CCAT 인력은 자격증 보유 여부나 근무연수만으로 선발하지 않는다. 실제 중증환자 대응 능력을 검증하기 위해 별도의 임상역량 평가를 도입한다.</p>
+        <table class="data-schema">
+          <thead>
+            <tr><th>평가 영역</th><th>핵심 내용</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>전문소생술</td><td>심정지 대응, 리듬 판단, 고품질 CPR, 현장 팀 운영</td></tr>
+            <tr><td>기도·호흡 관리</td><td>호흡부전 평가, 환기 보조, 산소화 실패 상황 대응</td></tr>
+            <tr><td>쇼크·중증외상</td><td>순환 부전, 출혈, 의식저하, 다발손상 초기 판단과 이송 우선순위 결정</td></tr>
+            <tr><td>특수 응급</td><td>중증소아, 고위험 산과, 다수사상자 현장 대응</td></tr>
+            <tr><td>의료지도·팀워크</td><td>의료지도 순응도, 팀 리더십, 상황실·거점병원과의 의사소통</td></tr>
+            <tr><td>품질관리</td><td>출동 후 케이스 리뷰, 오류 분석, 교육 피드백 수행 능력</td></tr>
+          </tbody>
+        </table>
+        <p>평가는 소방 내부 평가만으로 진행하지 않고, 권역응급의료센터, 응급의학과 전문의, 시뮬레이션 교육기관이 함께 참여하는 외부 임상평가 방식으로 운영한다. 인증은 1회성 선발이 아니라 정기 재인증과 실제 케이스 리뷰를 통해 유지한다.</p>
+
+        <h2>5. DMICU 전략과의 연계</h2>
+        <p>DMICU가 병원 간 중환자 이송과 권역 거점병원 연결을 담당한다면, CCAT은 병원 전 단계에서 초중증 환자를 식별하고 DMICU 체계로 연결하는 전방 기동팀이다. CCAT은 현장에서 초중증 환자를 조기 식별하고, 일반 구급대를 지원하며, 고난도 처치와 의료지도 연결, 이송 병원 선정, DMICU 또는 준-MICU 전환 판단을 수행한다.</p>
+        <p>이를 통해 통합특별시 응급의료체계는 단순한 병원 배치 계획을 넘어, 현장-전방거점-권역거점-최종치료기관으로 이어지는 하나의 작동 가능한 체계가 된다.</p>
+
+        <h2>6. 기대 효과</h2>
+        <p>CCAT 신설을 통해 광주·전남 통합특별시는 중증환자 대응 역량을 실질적으로 강화할 수 있다. 초중증 환자에게 더 높은 수준의 병원 전 처치를 제공하고, 일반 구급대는 경증·반복 출동과 기본 응급처치에 집중하며, 고난도 사건은 전문팀이 담당하는 역할 분담이 가능해진다.</p>
+        <p>또한 광주 도심과 전남 농어촌·도서·산간 지역 간 응급의료 격차를 줄이고, 병원 선정과 이송 수단 결정을 체계화해 불필요한 전원과 이송 지연을 줄일 수 있다. 출동 후 케이스 리뷰는 구급 품질관리와 교육체계를 강화하는 공통 근거가 된다.</p>
+
+        <h2>7. 결론</h2>
+        <p>광주·전남 통합특별시의 응급의료 전략은 병원, 장비, 구급차 숫자를 늘리는 것만으로 완성되지 않는다. 핵심은 어떤 환자에게 어떤 수준의 처치를 제공하고, 어느 단계에서 어떤 전문 자원을 투입할 것인지에 대한 운영체계의 재설계다.</p>
+        <p><span class="spectrum-highlight critical">본부 직할 Critical Care Ambulance Team은 그 재설계의 핵심 축이 될 수 있다.</span> CCAT은 일반 구급대와 경쟁하는 조직이 아니라, 일반 구급대가 감당하기 어려운 고위험·저빈도 중증 응급상황을 지원하는 전문 기동 자원이다. 따라서 광주·전남 통합특별시 출범과 함께 CCAT을 신설하고, 임상역량 평가 기반의 독립 전문구급대로 운영하는 방안을 적극 검토할 필요가 있다.</p>
+        <a class="page-link" href="#part-1">위로: 제1부 Trinity 전략 보기</a>
+      </section>
+
+      <aside class="aside">
+        <section class="panel">
+          <h2>Key Messages</h2>
+          <ul>
+            <li>CCAT은 일반 구급대의 상급 서열이 아니라 고위험·저빈도 사건에 투입되는 본부 직할 전문 기동 자원이다.</li>
+            <li>선발 기준은 자격증과 연차가 아니라 실제 임상역량, 의료지도 순응도, 팀 리더십, 케이스 리뷰 능력이어야 한다.</li>
+            <li>일반 구급대는 경증·반복 출동과 기본 처치에 집중하고, 초중증 환자는 CCAT이 전문적으로 지원한다.</li>
+            <li>DMICU, 준-MICU, 헬기이송, 전방 응급거점과 연결될 때 CCAT은 통합특별시 응급의료 전략의 현장 실행축이 된다.</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Activation Criteria</h2>
+          <ul>
+            <li>심정지 또는 심정지 임박</li>
+            <li>중증외상 또는 대량출혈 의심</li>
+            <li>기도 확보나 고난도 호흡 보조 필요</li>
+            <li>쇼크, 패혈증, 중증 저혈압 의심</li>
+            <li>중증소아 또는 고위험 산과 응급</li>
+            <li>다수사상자 발생 현장</li>
+            <li>일반 구급대 현장 전문지원 요청</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Operating Model</h2>
+          <p><strong>소속:</strong> 통합특별시 소방본부 직할 전문대.</p>
+          <p><strong>배치:</strong> 광주 도심권, 전남 서부권, 전남 동부권, 전남 중부·남부권, 도서·산간 연계 권역.</p>
+          <p><strong>평시 역할:</strong> 출동 대기뿐 아니라 시뮬레이션 훈련, 프로토콜 개선, 일반 구급대 교육, 케이스 리뷰를 수행한다.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Decision Point</h2>
+          <p>통합특별시 구급체계는 “모든 구급차가 모든 출동을 같은 방식으로 처리하는 구조”에서 벗어나, 환자 중증도와 처치 난이도에 따라 일반 구급대와 본부 직할 전문 기동팀을 분리하는 방향으로 재설계되어야 한다.</p>
         </section>
       </aside>
     </div>
