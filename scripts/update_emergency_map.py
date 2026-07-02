@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 MAP_HTML = ROOT / "gwangju_emergency_map.html"
+INDEX_HTML = ROOT / "index.html"
 
 REGIONS = {
     "광주": "15",
@@ -365,6 +366,18 @@ def update_static_text(source, captured_at, stats):
     return source
 
 
+def update_index_cache_buster(captured_at):
+    source = INDEX_HTML.read_text(encoding="utf-8")
+    version = re.sub(r"[^0-9]", "", captured_at)[:14]
+    updated = re.sub(
+        r'src="gwangju_emergency_map\.html(?:\?v=[^"]*)?"',
+        f'src="gwangju_emergency_map.html?v={version}"',
+        source,
+        count=1,
+    )
+    INDEX_HTML.write_text(updated, encoding="utf-8", newline="\n")
+
+
 def main():
     source = MAP_HTML.read_text(encoding="utf-8")
     previous_data = extract_array(source, "DATA")
@@ -378,6 +391,7 @@ def main():
     source = replace_array(source, "HISTORY", history)
     source = update_static_text(source, captured_at, stats)
     MAP_HTML.write_text(source, encoding="utf-8", newline="\n")
+    update_index_cache_buster(captured_at)
     print(
         "updated "
         f"{MAP_HTML.name}: rows={stats['total']} "
