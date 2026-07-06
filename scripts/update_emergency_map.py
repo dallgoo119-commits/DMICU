@@ -2,7 +2,7 @@ import json
 import re
 import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -14,11 +14,6 @@ INDEX_HTML = ROOT / "index.html"
 # - 구 파라미터 emogloca(광주 15 / 전남 26) 폐지 -> HTTP 400
 # - 신 파라미터 bjdcd1 사용, 전남광주통합특별시 신규 시도코드 = 12
 # 기관 코드(emogCode) 체계는 유지되므로 A15* -> 구 광주, A26* -> 구 전남으로 권역을 구분한다.
-API_URL = (
-    "https://mediboard.nemc.or.kr/api/v1/search/handy"
-    "?searchCondition=regional&bjdcd1=12"
-)
-
 REGION_BY_PREFIX = {
     "A15": "광주",
     "A26": "전남",
@@ -43,27 +38,29 @@ NATIONAL_CODES = {
 NATIONAL_THRESHOLD = 80  # 일반 응급실 병상 포화도(%) 컷
 
 
-def fetch_national():
-    """전국 응급의료기관 중 일반병상 포화도가 컷 이상인 기관을 슬림 포맷으로 수집.
-
-    반환: (rows, total_reporting, failed_regions, ok_regions)
-    일부 시도 수집 실패는 허용하고 failed에 기록한다. 전 시도 실패 시 ok_regions=0.
-    """
-    rows = []
-    total = 0
-    failed = []
-    ok = 0
+def fetch_all_regions():
+    """전 시도를 한 번씩만 조회한다. 지역 지도와 전국 패널이 결과를 공유한다."""
+    items_by_code = {}
+    failed_labels = []
     for code, label in NATIONAL_CODES.items():
         url = (
             "https://mediboard.nemc.or.kr/api/v1/search/handy"
             f"?searchCondition=regional&bjdcd1={code}"
         )
         try:
-            items = get_items(request_json(url))
-            ok += 1
+            items_by_code[code] = get_items(request_json(url))
         except Exception:
-            failed.append(label)
-            continue
+            failed_labels.append(label)
+        time.sleep(0.2)
+    return items_by_code, failed_labels
+
+
+def fetch_national(items_by_code, failed_labels):
+    """수집된 전 시도 데이터에서 포화도 컷 이상 기관을 슬림 포맷으로 추린다."""
+    rows = []
+    total = 0
+    for code, items in items_by_code.items():
+        label = NATIONAL_CODES[code]
         for item in items:
             available = number(pick(item, "generalEmergencyAvailable"))
             beds_total = number(pick(item, "generalEmergencyTotal"))
@@ -94,9 +91,8 @@ def fetch_national():
                     "m": len(collect_messages(item)),
                 }
             )
-        time.sleep(0.2)
     rows.sort(key=lambda x: (-x["s"], x["r"], x["n"]))
-    return rows, total, failed, ok
+    return rows, total, failed_labels, len(items_by_code)
 
 GRADE_BY_CODE = {
     "A1500001": "B",
@@ -164,17 +160,25 @@ GRADE_BY_CODE = {
 }
 
 
-def request_json(url):
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/json,text/plain,*/*",
-            "Referer": "https://mediboard.nemc.or.kr/emergency_room_in_hand",
-            "User-Agent": "DMICU-bed-map-updater/1.0",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=30) as response:
-        return json.load(response)
+def request_json(url, retries=2):
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Accept": "application/json,text/plain,*/*",
+                    "Referer": "https://mediboard.nemc.or.kr/emergency_room_in_hand",
+                    "User-Agent": "DMICU-bed-map-updater/1.0",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return json.load(response)
+        except Exception as error:  # noqa: BLE001 - 일시 장애는 재시도로 흡수
+            last_error = error
+            if attempt < retries:
+                time.sleep(1.5 * (attempt + 1))
+    raise last_error
 
 
 def extract_array(source, name):
@@ -305,9 +309,12 @@ def collect_messages(row):
     return messages
 
 
-def fetch_rows(previous_by_code):
+def fetch_rows(previous_by_code, items):
+    if not items:
+        # 광주·전남 데이터가 없으면 기존 지도를 지우지 않도록 실패 처리한다
+        raise RuntimeError("전남광주(bjdcd1=12) 수집 실패; 지도 갱신을 중단합니다")
     rows = []
-    for item in get_items(request_json(API_URL)):
+    for item in items:
         code = pick(item, "emogCode", "hpid", "dutyId")
         if not code:
             continue
@@ -359,11 +366,33 @@ def fetch_rows(previous_by_code):
     return sorted(rows, key=lambda r: (r["region"], order[r["classCode"]], r["name"]))
 
 
+HISTORY_RETENTION_DAYS = 365
+
+
 def update_history(history, rows, captured_at):
+    """일자별 기록을 갱신한다.
+
+    각 (날짜, 기관)에는 그날 관측된 일반 병상 포화도가 가장 높았던 시점의
+    스냅샷을 보관한다(동률이면 최신). 과거 방식(마지막 실행값 보관)은 UTC 일자
+    경계 특성상 항상 아침 시간대 저점만 남는 편향이 있어 교체했다.
+    보존 기간을 넘긴 기록은 파일 크기 무한 증식을 막기 위해 잘라낸다.
+    """
     today = captured_at[:10]
-    by_key = {(row["date"], row["code"]): row for row in history}
+    cutoff = (
+        datetime.fromisoformat(captured_at).date()
+        - timedelta(days=HISTORY_RETENTION_DAYS)
+    ).isoformat()
+    by_key = {
+        (row["date"], row["code"]): row for row in history if row["date"] >= cutoff
+    }
+
+    def peak(record):
+        value = record.get("general_saturation")
+        return -1 if value is None else value
+
     for row in rows:
-        by_key[(today, row["code"])] = {
+        key = (today, row["code"])
+        candidate = {
             "date": today,
             "region": row["region"],
             "code": row["code"],
@@ -378,6 +407,9 @@ def update_history(history, rows, captured_at):
             "child_saturation": row["child_saturation"],
             "updated_at": captured_at,
         }
+        existing = by_key.get(key)
+        if existing is None or peak(candidate) >= peak(existing):
+            by_key[key] = candidate
     return [by_key[key] for key in sorted(by_key)]
 
 
@@ -446,11 +478,6 @@ def update_static_text(source, captured_at, stats):
         source,
         count=1,
     )
-    source = source.replace(
-        "일자별 그래프는 저장된 daily_er_bed_saturation.csv를 기준으로 하며, 미수집 날짜는 비워 둡니다.",
-        "일자별 그래프는 자동 저장된 병상 스냅샷을 기준으로 하며, 미수집 날짜는 비워 둡니다.",
-        1,
-    )
     return source
 
 
@@ -471,8 +498,9 @@ def main():
     previous_data = extract_array(source, "DATA")
     history = extract_array(source, "HISTORY")
     previous_by_code = {row["code"]: row for row in previous_data}
-    rows = fetch_rows(previous_by_code)
-    nat_rows, nat_total, nat_failed, nat_ok = fetch_national()
+    items_by_code, failed_labels = fetch_all_regions()
+    rows = fetch_rows(previous_by_code, items_by_code.get("12"))
+    nat_rows, nat_total, nat_failed, nat_ok = fetch_national(items_by_code, failed_labels)
     captured_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     history = update_history(history, rows, captured_at)
     stats = summary(rows)
