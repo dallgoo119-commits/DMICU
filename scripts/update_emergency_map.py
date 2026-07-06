@@ -9,10 +9,27 @@ ROOT = Path(__file__).resolve().parents[1]
 MAP_HTML = ROOT / "gwangju_emergency_map.html"
 INDEX_HTML = ROOT / "index.html"
 
-REGIONS = {
-    "광주": "15",
-    "전남": "26",
+# 2026-07-01 전남광주통합특별시 출범으로 NEMC handy API가 개편됨.
+# - 구 파라미터 emogloca(광주 15 / 전남 26) 폐지 -> HTTP 400
+# - 신 파라미터 bjdcd1 사용, 전남광주통합특별시 신규 시도코드 = 12
+# 기관 코드(emogCode) 체계는 유지되므로 A15* -> 구 광주, A26* -> 구 전남으로 권역을 구분한다.
+API_URL = (
+    "https://mediboard.nemc.or.kr/api/v1/search/handy"
+    "?searchCondition=regional&bjdcd1=12"
+)
+
+REGION_BY_PREFIX = {
+    "A15": "광주",
+    "A26": "전남",
 }
+
+
+def region_of(code, previous):
+    text = str(code)
+    for prefix, name in REGION_BY_PREFIX.items():
+        if text.startswith(prefix):
+            return name
+    return previous.get("region") or "기타"
 
 GRADE_BY_CODE = {
     "A1500001": "B",
@@ -223,51 +240,53 @@ def collect_messages(row):
 
 def fetch_rows(previous_by_code):
     rows = []
-    for region, region_code in REGIONS.items():
-        url = (
-            "https://mediboard.nemc.or.kr/api/v1/search/handy"
-            f"?searchCondition=regional&emogloca={region_code}"
+    for item in get_items(request_json(API_URL)):
+        code = pick(item, "emogCode", "hpid", "dutyId")
+        if not code:
+            continue
+        previous = previous_by_code.get(code, {})
+        lat = pick(item, "latitude", "lat", "wgs84Lat") or previous.get("lat")
+        lon = pick(item, "longitude", "lon", "lng", "wgs84Lon") or previous.get("lon")
+        if lat is None or lon is None:
+            # 좌표가 없는 신규 기관은 지도에 표기할 수 없으므로 건너뛴다
+            continue
+        general_available = number(pick(item, "generalEmergencyAvailable"))
+        general_total = number(pick(item, "generalEmergencyTotal"))
+        child_available = number(pick(item, "childEmergencyAvailable"))
+        child_total = number(pick(item, "childEmergencyTotal"))
+        type_name = (
+            pick(item, "emergencyInstitutionType", "emogTypeName", "dutyEmclsName")
+            or previous.get("type")
+            or "미분류"
         )
-        for item in get_items(request_json(url)):
-            code = pick(item, "emogCode", "hpid", "dutyId")
-            if not code:
-                continue
-            previous = previous_by_code.get(code, {})
-            general_available = number(pick(item, "generalEmergencyAvailable"))
-            general_total = number(pick(item, "generalEmergencyTotal"))
-            child_available = number(pick(item, "childEmergencyAvailable"))
-            child_total = number(pick(item, "childEmergencyTotal"))
-            type_name = (
-                pick(item, "emergencyInstitutionType", "emogTypeName", "dutyEmclsName")
-                or previous.get("type")
-                or "미분류"
-            )
-            row = {
-                "region": region,
-                "code": code,
-                "name": pick(item, "emergencyRoomName", "dutyName", "hospitalName")
-                or previous.get("name")
-                or "",
-                "type": type_name,
-                "grade": GRADE_BY_CODE.get(code, previous.get("grade", "-")),
-                "lat": float(pick(item, "latitude", "lat", "wgs84Lat") or previous["lat"]),
-                "lon": float(
-                    pick(item, "longitude", "lon", "lng", "wgs84Lon") or previous["lon"]
-                ),
-                "general_available": general_available,
-                "general_total": general_total,
-                "general_saturation": percent(general_available, general_total),
-                "child_available": child_available,
-                "child_total": child_total,
-                "child_saturation": percent(child_available, child_total),
-                "message_count": len(collect_messages(item)),
-                "address": pick(item, "address", "dutyAddr", "addr")
-                or previous.get("address")
-                or "",
-                "messages": collect_messages(item),
-                "classCode": class_code(type_name),
-            }
-            rows.append(row)
+        row = {
+            "region": region_of(code, previous),
+            "code": code,
+            "name": pick(item, "emergencyRoomName", "dutyName", "hospitalName")
+            or previous.get("name")
+            or "",
+            "type": type_name,
+            "grade": GRADE_BY_CODE.get(code, previous.get("grade", "-")),
+            "lat": float(lat),
+            "lon": float(lon),
+            "general_available": general_available,
+            "general_total": general_total,
+            "general_saturation": percent(general_available, general_total),
+            "child_available": child_available,
+            "child_total": child_total,
+            "child_saturation": percent(child_available, child_total),
+            "message_count": len(collect_messages(item)),
+            "address": pick(item, "address", "dutyAddr", "addr")
+            or previous.get("address")
+            or "",
+            "messages": collect_messages(item),
+            "classCode": class_code(type_name),
+        }
+        rows.append(row)
+
+    if not rows:
+        # API가 빈 결과를 주면 기존 지도 데이터를 지우지 않도록 실패 처리한다
+        raise RuntimeError("NEMC handy API returned no rows; aborting update")
 
     order = {"trauma": 0, "regional": 1, "local_center": 2, "local": 3, "unknown": 4}
     return sorted(rows, key=lambda r: (r["region"], order[r["classCode"]], r["name"]))
