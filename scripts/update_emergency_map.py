@@ -1,5 +1,6 @@
 import json
 import re
+import time
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,6 +31,72 @@ def region_of(code, previous):
         if text.startswith(prefix):
             return name
     return previous.get("region") or "기타"
+
+
+# 전국 응급실 포화 패널용: 2026-07 개편 기준 시도별 bjdcd1 코드
+NATIONAL_CODES = {
+    "11": "서울", "26": "부산", "27": "대구", "28": "인천",
+    "30": "대전", "31": "울산", "36": "세종", "41": "경기",
+    "43": "충북", "44": "충남", "47": "경북", "48": "경남",
+    "50": "제주", "51": "강원", "52": "전북", "12": "광주전남",
+}
+NATIONAL_THRESHOLD = 80  # 일반 응급실 병상 포화도(%) 컷
+
+
+def fetch_national():
+    """전국 응급의료기관 중 일반병상 포화도가 컷 이상인 기관을 슬림 포맷으로 수집.
+
+    반환: (rows, total_reporting, failed_regions, ok_regions)
+    일부 시도 수집 실패는 허용하고 failed에 기록한다. 전 시도 실패 시 ok_regions=0.
+    """
+    rows = []
+    total = 0
+    failed = []
+    ok = 0
+    for code, label in NATIONAL_CODES.items():
+        url = (
+            "https://mediboard.nemc.or.kr/api/v1/search/handy"
+            f"?searchCondition=regional&bjdcd1={code}"
+        )
+        try:
+            items = get_items(request_json(url))
+            ok += 1
+        except Exception:
+            failed.append(label)
+            continue
+        for item in items:
+            available = number(pick(item, "generalEmergencyAvailable"))
+            beds_total = number(pick(item, "generalEmergencyTotal"))
+            if not beds_total or available is None:
+                continue
+            total += 1
+            saturation = percent(available, beds_total)
+            if saturation is None or saturation < NATIONAL_THRESHOLD:
+                continue
+            emog = str(pick(item, "emogCode", "hpid", "dutyId") or "")
+            if emog.startswith("A15"):
+                region = "광주"
+            elif emog.startswith("A26"):
+                region = "전남"
+            else:
+                region = label
+            rows.append(
+                {
+                    "r": region,
+                    "n": pick(item, "emergencyRoomName", "dutyName", "hospitalName") or "",
+                    "t": pick(
+                        item, "emergencyInstitutionType", "emogTypeName", "dutyEmclsName"
+                    )
+                    or "",
+                    "a": available,
+                    "o": beds_total,
+                    "s": saturation,
+                    "m": len(collect_messages(item)),
+                }
+            )
+        time.sleep(0.2)
+    rows.sort(key=lambda x: (-x["s"], x["r"], x["n"]))
+    return rows, total, failed, ok
 
 GRADE_BY_CODE = {
     "A1500001": "B",
@@ -348,10 +415,12 @@ def update_static_text(source, captured_at, stats):
         source,
         count=1,
     )
-    source = source.replace(
-        "저장된 일자별 포화도 그래프를 확인할 수 있습니다.",
-        "2시간마다 갱신되는 최신 병상 현황과 저장된 일자별 포화도 그래프를 확인할 수 있습니다.",
-        1,
+    # 과거 버전이 매 실행마다 동일 문구를 중복 삽입하던 버그가 있어, 반복을 1회로 정규화한다(멱등)
+    source = re.sub(
+        r"(?:2시간마다 갱신되는 최신 병상 현황과 )+",
+        "2시간마다 갱신되는 최신 병상 현황과 ",
+        source,
+        count=1,
     )
     source = re.sub(
         r'<div class="card"><strong>\d+</strong><span>응급의료기관 등<br>광주 \d+ / 전남 \d+</span></div>',
@@ -403,11 +472,20 @@ def main():
     history = extract_array(source, "HISTORY")
     previous_by_code = {row["code"]: row for row in previous_data}
     rows = fetch_rows(previous_by_code)
+    nat_rows, nat_total, nat_failed, nat_ok = fetch_national()
     captured_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     history = update_history(history, rows, captured_at)
     stats = summary(rows)
     source = replace_array(source, "DATA", rows)
     source = replace_array(source, "HISTORY", history)
+    if nat_ok:
+        # 전 시도 수집 실패 시에는 이전 패널 데이터를 유지한다
+        source = replace_array(source, "NATIONAL", nat_rows)
+        source = replace_array(
+            source,
+            "NATMETA",
+            [{"captured": captured_at, "total": nat_total, "failed": nat_failed}],
+        )
     source = update_static_text(source, captured_at, stats)
     MAP_HTML.write_text(source, encoding="utf-8", newline="\n")
     update_index_cache_buster(captured_at)
@@ -416,6 +494,8 @@ def main():
         f"{MAP_HTML.name}: rows={stats['total']} "
         f"general={stats['general_available']}/{stats['general_total']} "
         f"child={stats['child_available']}/{stats['child_total']} "
+        f"national>={NATIONAL_THRESHOLD}%: {len(nat_rows)}/{nat_total} "
+        f"(failed_regions={nat_failed or 'none'}) "
         f"captured_at={captured_at}"
     )
 
