@@ -2,7 +2,9 @@ name: Update emergency bed map
 
 on:
   schedule:
-    - cron: "7 */2 * * *"
+    # GitHub 스케줄은 부하 시 지연·드롭됨(실측: 하루 3~4회만 실행).
+    # 30분 간격으로 시도해 실효 주기를 확보한다. concurrency가 중복 실행을 정리한다.
+    - cron: "13,43 * * * *"
   workflow_dispatch:
 
 permissions:

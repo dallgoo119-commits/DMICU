@@ -140,6 +140,7 @@ document.querySelectorAll('.periods button').forEach(btn=>btn.addEventListener('
 document.getElementById('closeTrend').addEventListener('click',closeTrendPanel);
 document.getElementById('trendBackdrop').addEventListener('click',closeTrendPanel);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTrendPanel()});
+(function(){const el=document.querySelector('header .sub');if(!el)return;const m=el.textContent.match(/지도 생성 ([0-9T:+\-.]+)/);if(!m)return;const d=new Date(m[1]);if(isNaN(d))return;const s=d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});el.textContent=el.textContent.replace(m[1],s+' KST')})();
 renderTable();
 renderNational();
 initMap();
