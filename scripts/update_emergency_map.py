@@ -56,8 +56,9 @@ def fetch_all_regions():
 
 
 def fetch_national(items_by_code, failed_labels):
-    """수집된 전 시도 데이터에서 포화도 컷 이상 기관을 슬림 포맷으로 추린다."""
+    """수집된 전 시도 데이터에서 전체 기관 흐름과 포화도 컷 이상 패널을 만든다."""
     rows = []
+    history_rows = []
     total = 0
     for code, items in items_by_code.items():
         label = NATIONAL_CODES[code]
@@ -68,7 +69,7 @@ def fetch_national(items_by_code, failed_labels):
                 continue
             total += 1
             saturation = percent(available, beds_total)
-            if saturation is None or saturation < NATIONAL_THRESHOLD:
+            if saturation is None:
                 continue
             emog = str(pick(item, "emogCode", "hpid", "dutyId") or "")
             if emog.startswith("A15"):
@@ -77,22 +78,25 @@ def fetch_national(items_by_code, failed_labels):
                 region = "전남"
             else:
                 region = label
-            rows.append(
-                {
-                    "r": region,
-                    "n": pick(item, "emergencyRoomName", "dutyName", "hospitalName") or "",
-                    "t": pick(
-                        item, "emergencyInstitutionType", "emogTypeName", "dutyEmclsName"
-                    )
-                    or "",
-                    "a": available,
-                    "o": beds_total,
-                    "s": saturation,
-                    "m": len(collect_messages(item)),
-                }
-            )
+            row = {
+                "c": emog or f"{region}|{pick(item, 'emergencyRoomName', 'dutyName', 'hospitalName') or ''}",
+                "r": region,
+                "n": pick(item, "emergencyRoomName", "dutyName", "hospitalName") or "",
+                "t": pick(
+                    item, "emergencyInstitutionType", "emogTypeName", "dutyEmclsName"
+                )
+                or "",
+                "a": available,
+                "o": beds_total,
+                "s": saturation,
+                "m": len(collect_messages(item)),
+            }
+            history_rows.append(row)
+            if saturation < NATIONAL_THRESHOLD:
+                continue
+            rows.append(row)
     rows.sort(key=lambda x: (-x["s"], x["r"], x["n"]))
-    return rows, total, failed_labels, len(items_by_code)
+    return rows, total, failed_labels, len(items_by_code), history_rows
 
 GRADE_BY_CODE = {
     "A1500001": "B",
@@ -413,6 +417,38 @@ def update_history(history, rows, captured_at):
     return [by_key[key] for key in sorted(by_key)]
 
 
+def update_national_history(history, rows, captured_at):
+    """내 손안의 응급실 전국 전체 기관의 일자별 최고 포화 스냅샷을 저장한다."""
+    today = captured_at[:10]
+    cutoff = (
+        datetime.fromisoformat(captured_at).date()
+        - timedelta(days=HISTORY_RETENTION_DAYS)
+    ).isoformat()
+    by_key = {
+        (row["date"], row["code"]): row for row in history if row["date"] >= cutoff
+    }
+
+    for row in rows:
+        code = row.get("c") or f'{row["r"]}|{row["n"]}'
+        key = (today, code)
+        candidate = {
+            "date": today,
+            "region": row["r"],
+            "code": code,
+            "name": row["n"],
+            "type": row["t"],
+            "available": row["a"],
+            "total": row["o"],
+            "saturation": row["s"],
+            "message_count": row["m"],
+            "updated_at": captured_at,
+        }
+        existing = by_key.get(key)
+        if existing is None or candidate["saturation"] >= existing.get("saturation", -1):
+            by_key[key] = candidate
+    return [by_key[key] for key in sorted(by_key)]
+
+
 def summary(rows):
     def known(kind):
         return [row for row in rows if row[f"{kind}_available"] is not None and row[f"{kind}_total"]]
@@ -502,10 +538,11 @@ def main():
     source = MAP_HTML.read_text(encoding="utf-8")
     previous_data = extract_array(source, "DATA")
     history = extract_array(source, "HISTORY")
+    national_history = extract_array(source, "NATIONAL_HISTORY")
     previous_by_code = {row["code"]: row for row in previous_data}
     items_by_code, failed_labels = fetch_all_regions()
     rows = fetch_rows(previous_by_code, items_by_code.get("12"))
-    nat_rows, nat_total, nat_failed, nat_ok = fetch_national(items_by_code, failed_labels)
+    nat_rows, nat_total, nat_failed, nat_ok, nat_history_rows = fetch_national(items_by_code, failed_labels)
     captured_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     history = update_history(history, rows, captured_at)
     stats = summary(rows)
@@ -513,7 +550,9 @@ def main():
     source = replace_array(source, "HISTORY", history)
     if nat_ok:
         # 전 시도 수집 실패 시에는 이전 패널 데이터를 유지한다
+        national_history = update_national_history(national_history, nat_history_rows, captured_at)
         source = replace_array(source, "NATIONAL", nat_rows)
+        source = replace_array(source, "NATIONAL_HISTORY", national_history)
         source = replace_array(
             source,
             "NATMETA",
