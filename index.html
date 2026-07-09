@@ -267,9 +267,27 @@ p { margin: 0 0 14px; }
 }
 .map-frame {
   width: 100%;
-  height: 1180px;
+  min-height: 1180px;
   border: 1px solid var(--line);
   display: block;
+}
+.map-open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0;
+  border: 1px solid #b42318;
+  background: #fff5f5;
+  color: #b42318;
+  border-radius: 8px;
+  padding: 10px 13px;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.map-open-link:hover {
+  background: #ffe9e9;
 }
 .caption {
   color: var(--muted);
@@ -597,7 +615,7 @@ a {
   .visitor-grid { grid-template-columns: 1fr; }
   .summary-row { grid-template-columns: 1fr; gap: 4px; }
   .comment-panel { padding: 16px 16px 18px; }
-  .map-frame { height: 920px; }
+  .map-frame { min-height: 920px; }
 }
 @media (max-width: 640px) {
   .page { padding: 0 12px; margin-top: 14px; }
@@ -615,7 +633,7 @@ a {
     overflow-x: auto;
     white-space: nowrap;
   }
-  .map-frame { height: 760px; }
+  .map-frame { min-height: 760px; }
 }
 @media print {
   body { background: white; }
@@ -687,6 +705,7 @@ a {
 
         <section class="figure">
           <div class="figure-head"><strong>Figure 1: 광주·전남 응급의료기관 실시간 병상 지도</strong></div>
+          <a class="map-open-link" href="gwangju_emergency_map.html?v=20260709122810">병상 정보 전체 화면으로 보기</a>
           <iframe class="map-frame" src="gwangju_emergency_map.html?v=20260709122810" title="광주·전남 응급의료기관 실시간 병상 지도"></iframe>
           <div class="caption">원 크기는 기관 유형을, 색상은 2024 응급의료기관 평가등급을 나타낸다. 표의 병상 수는 현재 시점의 남은 병상/전체 병상이며, 병상 포화도는 (전체 병상-남은 병상)/전체 병상으로 계산한 실시간 값이다. 3개월 또는 1년 평균 병상포화지수와는 구분해야 한다. 지도 하단의 전국 패널은 일반 응급실 병상 포화도 80% 이상인 기관만 전국 단위로 별도 집계한 것이며, 광주·전남 소재 기관은 적색으로 구분해 표시한다. 기관별 일자별 추이 그래프의 각 점은 당일 관측된 포화도 최고 시점 값이다.</div>
         </section>
@@ -1120,6 +1139,27 @@ function wirePublicCommentFormLink() {
   });
 }
 wirePublicCommentFormLink();
+function resizeEmergencyMapFrame() {
+  const frame = document.querySelector('.map-frame');
+  if (!frame) return;
+  try {
+    const doc = frame.contentDocument || frame.contentWindow?.document;
+    if (!doc) return;
+    const height = Math.max(
+      doc.body?.scrollHeight || 0,
+      doc.documentElement?.scrollHeight || 0,
+      760
+    );
+    frame.style.height = `${height + 24}px`;
+  } catch (error) {
+    frame.style.height = '';
+  }
+}
+document.querySelector('.map-frame')?.addEventListener('load', () => {
+  resizeEmergencyMapFrame();
+  setTimeout(resizeEmergencyMapFrame, 500);
+});
+window.addEventListener('resize', resizeEmergencyMapFrame);
 async function supabaseRequest(path, options = {}) {
   const response = await fetch(`${SUPABASE_COMMENTS_ENDPOINT}${path}`, {
     ...options,

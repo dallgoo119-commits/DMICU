@@ -491,10 +491,9 @@ def update_index_cache_buster(captured_at):
     source = INDEX_HTML.read_text(encoding="utf-8")
     version = re.sub(r"[^0-9]", "", captured_at)[:14]
     updated = re.sub(
-        r'src="gwangju_emergency_map\.html(?:\?v=[^"]*)?"',
-        f'src="gwangju_emergency_map.html?v={version}"',
+        r'(src|href)="gwangju_emergency_map\.html(?:\?v=[^"]*)?"',
+        rf'\1="gwangju_emergency_map.html?v={version}"',
         source,
-        count=1,
     )
     INDEX_HTML.write_text(updated, encoding="utf-8", newline="\n")
 

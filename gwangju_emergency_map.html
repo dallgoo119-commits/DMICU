@@ -9,6 +9,72 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{--ink:#182230;--muted:#667085;--line:#e4e7ec;--green:#198754;--amber:#d59000;--yellow:#f2b705;--red:#d92d20;--gray:#667085;--blue:#2563eb}*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans KR',Arial,sans-serif;color:var(--ink);background:#fff}header{padding:18px 22px 12px;border-bottom:1px solid var(--line)}h1{margin:0 0 6px;font-size:27px;line-height:1.2;letter-spacing:0}.sub{color:var(--muted);font-size:14px;line-height:1.5}.wrap{display:grid;grid-template-columns:minmax(680px,1fr);grid-template-rows:920px 430px;min-height:1350px}aside{overflow:auto;border-bottom:1px solid var(--line);background:#fff}#map{height:430px;width:100%}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 16px 10px}.card{border:1px solid #d9e0ea;border-radius:8px;padding:12px 13px;min-height:78px;background:#fff}.card strong{display:block;font-size:27px;line-height:1.1;margin-bottom:4px}.card span{color:#667085;font-size:13px;line-height:1.25}.section{padding:12px 16px;border-top:1px solid var(--line)}.section h2{margin:0 0 8px;font-size:17px}.note{background:#fff7e6;border-left:4px solid #d59000;padding:11px 12px;border-radius:6px;color:#344054;font-size:13px;line-height:1.45}.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}button{font-family:inherit}button.filter{border:1px solid #d0d5dd;background:#fff;color:#344054;padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:600}button.filter.active{background:#182230;color:#fff;border-color:#182230}.trend-btn{border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:4px 7px;font-size:12px;font-weight:700;cursor:pointer;margin-top:5px}.table-wrap{padding:0 16px 18px}table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}th{text-align:left;color:#344054;background:#f9fafb;padding:9px 8px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1}td{padding:9px 8px;border-bottom:1px solid #edf0f4;vertical-align:top}th:nth-child(1),td:nth-child(1){width:58px}th:nth-child(2),td:nth-child(2){width:255px}th:nth-child(3),td:nth-child(3){width:150px}th:nth-child(4),td:nth-child(4){width:112px;text-align:left}th:nth-child(5),td:nth-child(5),th:nth-child(6),td:nth-child(6){width:130px}.name-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.name{font-weight:650;line-height:1.25}.addr{color:#667085;font-size:12px;margin-top:3px;line-height:1.25}.badge{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:20px;padding:0 7px;border-radius:999px;color:#fff;font-weight:800;font-size:12px}.A{background:var(--green)}.B{background:var(--amber)}.C{background:var(--red)}.unk{background:var(--gray)}.message-badge{display:inline-flex;align-items:center;border:1px solid #fed7aa;background:#fff7ed;color:#c2410c;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:800;cursor:pointer}.message-badge:hover{background:#ffedd5}.message-list{margin-top:8px;border:1px solid #fed7aa;background:#fffaf3;border-radius:8px;padding:8px;display:none}.message-list.open{display:block}.message-item{padding:7px 0;border-bottom:1px solid #ffedd5;color:#344054;font-size:12px;line-height:1.45}.message-item:last-child{border-bottom:0}.message-meta{display:block;color:#c2410c;font-weight:800;margin-bottom:2px}.status-pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:800;color:#fff;white-space:nowrap}.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.9)}.status-red{background:var(--red)}.status-yellow{background:var(--yellow);color:#111827}.status-green{background:var(--green)}.status-gray{background:var(--gray)}.beds{white-space:nowrap}.bar{height:8px;background:#edf2f7;border-radius:999px;overflow:hidden;margin-top:4px}.fill{height:100%;border-radius:999px;background:#d92d20}.fill-green{background:var(--green)}.fill-yellow{background:var(--yellow)}.fill-red{background:var(--red)}.fill-gray{background:#cbd5e1}.sat{color:#667085;font-size:12px;margin-top:2px}.legend{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;box-shadow:0 8px 26px rgba(16,24,40,.14);font-size:13px;line-height:1.65}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}.popup h3{margin:0 0 5px;font-size:16px}.popup p{margin:3px 0;font-size:13px}.trend-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.22);z-index:999;display:none}.trend-backdrop.open{display:block}.trend-panel{position:fixed;right:22px;top:82px;width:min(920px,calc(100vw - 44px));max-height:calc(100vh - 104px);overflow:auto;background:#fff;border:1px solid var(--line);box-shadow:0 24px 60px rgba(16,24,40,.24);z-index:1000;border-radius:10px;display:none}.trend-panel.open{display:block}.trend-head{position:sticky;top:0;background:#fff;z-index:2;display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--line)}.trend-head h2{font-size:20px;margin:0 0 4px}.trend-head p{margin:0;color:var(--muted);font-size:13px}.close-btn{border:2px solid #fecaca;background:#fff1f2;color:#b42318;min-width:86px;height:42px;border-radius:999px;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(180,35,24,.12)}.close-btn:hover{background:#ffe4e6;border-color:#fda4af}.trend-body{padding:15px 18px 18px}.periods{position:sticky;top:75px;background:#fff;z-index:1;display:flex;gap:8px;flex-wrap:wrap;margin:-2px 0 12px;padding:8px 0}.periods button{border:1px solid #d0d5dd;background:#fff;border-radius:7px;padding:7px 10px;font-weight:700;cursor:pointer}.periods button.active{background:#182230;color:#fff;border-color:#182230}.avg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:13px}.avg-card{border:1px solid #d9e0ea;border-radius:8px;padding:10px 11px;background:#fbfcfe}.avg-card strong{display:block;font-size:22px;line-height:1.1}.avg-card span{display:block;color:#667085;font-size:12px;margin-top:4px}.chart-box{height:380px;border:1px solid var(--line);border-radius:8px;padding:12px;background:#fff}.missing-note{font-size:13px;color:#667085;margin-top:10px;line-height:1.5}.national{border-top:3px solid #b42318;background:#fff}.nat-head{padding:16px 16px 4px}.nat-head h2{margin:0 0 4px;font-size:18px;color:#b42318}.nat-sub{color:var(--muted);font-size:13px;line-height:1.5}.nat-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 16px 10px}.nat-controls .label{color:var(--muted);font-size:13px;font-weight:600}.nat-th{border:1px solid #d0d5dd;background:#fff;color:#344054;padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:600}.nat-th.active{background:#b42318;color:#fff;border-color:#b42318}.nat-table-wrap{padding:0 16px 4px;max-height:430px;overflow:auto}table.nat th:nth-child(1),table.nat td:nth-child(1){width:64px}table.nat th:nth-child(2),table.nat td:nth-child(2){width:auto}table.nat th:nth-child(3),table.nat td:nth-child(3){width:96px}table.nat th:nth-child(4),table.nat td:nth-child(4){width:170px}tr.local{box-shadow:inset 4px 0 0 #b42318;background:#fff9f7}tr.local td:first-child{font-weight:800;color:#b42318}.nat-type{display:inline-flex;align-items:center;border:1px solid #d0d5dd;color:#475467;border-radius:6px;padding:1px 6px;font-size:11px;font-weight:700;background:#f8fafc}.nat-empty{color:#667085;text-align:center;padding:20px 8px}.sortbtn{border:1px solid #d0d5dd;background:#fff;color:#344054;padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:600}.sortbtn.active{background:#b42318;color:#fff;border-color:#b42318}.nat-jump{display:flex;align-items:center;gap:8px;margin:2px 16px 4px;width:calc(100% - 32px);text-align:left;border:1px solid #fecaca;background:#fff5f5;color:#b42318;font-weight:800;font-size:13px;border-radius:8px;padding:10px 12px;cursor:pointer;line-height:1.35}.nat-jump:hover{background:#ffe9e9}.nat-note{margin:0 16px 16px}td .sat strong{color:#b42318}@media(max-width:640px){.nat-table-wrap{max-height:380px}table.nat th:nth-child(3),table.nat td:nth-child(3){width:74px}table.nat th:nth-child(4),table.nat td:nth-child(4){width:118px}}@media(max-width:980px){.wrap{grid-template-columns:1fr;grid-template-rows:auto 360px;min-height:0}aside{height:auto;max-height:70vh;border-right:0;border-bottom:1px solid var(--line)}#map{height:360px}.cards{grid-template-columns:1fr 1fr}.trend-panel{top:58px;right:10px;width:calc(100vw - 20px);max-height:calc(100vh - 76px)}}
+/* Mobile-first readability overrides. Keep generated data untouched. */
+.wrap{display:block;min-height:0}
+aside{overflow:visible}
+.map-section{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#f8fafc;padding:14px 16px 16px}
+.map-disclosure{max-width:1180px;margin:0 auto}
+.map-disclosure summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #cbd5e1;background:#fff;color:#182230;border-radius:8px;padding:12px 14px;font-weight:850;cursor:pointer}
+.map-disclosure summary::-webkit-details-marker{display:none}
+.map-disclosure summary::after{content:"열기";font-size:12px;color:#475467;border:1px solid #d0d5dd;border-radius:999px;padding:4px 9px;background:#f8fafc}
+.map-disclosure[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.map-disclosure[open] summary::after{content:"접기"}
+.map-kicker{display:block;color:#667085;font-size:12px;font-weight:650;margin-top:3px;line-height:1.35}
+.map-shell{border:1px solid #cbd5e1;border-top:0;background:#fff;border-bottom-left-radius:8px;border-bottom-right-radius:8px;overflow:hidden}
+#map{height:440px;width:100%}
+@media(max-width:980px){
+header{padding:15px 14px 11px}
+h1{font-size:22px}
+.sub{font-size:13px}
+.wrap{display:block;min-height:0}
+aside{max-height:none;border-bottom:0}
+.cards{grid-template-columns:1fr 1fr;padding:12px}
+.card{padding:11px 12px}
+.card strong{font-size:21px}
+.section{padding:12px}
+.table-wrap{padding:0 12px 14px}
+.map-section{padding:8px 12px 14px}
+.map-disclosure summary{position:sticky;top:0;z-index:4}
+.map-shell{max-height:360px}
+#map{height:340px}
+.trend-panel{top:10px;right:8px;width:calc(100vw - 16px);max-height:calc(100vh - 20px);border-radius:8px}
+.trend-head{padding:13px}
+.trend-body{padding:12px}
+.chart-box{height:300px}
+}
+@media(max-width:640px){
+.cards{grid-template-columns:1fr}
+.filters{gap:7px}
+.filters .label{flex-basis:100%;margin-left:0!important}
+.filter,.sortbtn,.nat-th{min-height:38px}
+.note{font-size:12px}
+.table-wrap table:not(.nat),.table-wrap table:not(.nat) thead,.table-wrap table:not(.nat) tbody,.table-wrap table:not(.nat) tr,.table-wrap table:not(.nat) td{display:block;width:100%}
+.table-wrap table:not(.nat) thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.table-wrap table:not(.nat){font-size:14px;border-collapse:separate;border-spacing:0}
+.table-wrap table:not(.nat) tr{border:1px solid #d9e0ea;border-radius:8px;background:#fff;margin:0 0 10px;overflow:hidden;box-shadow:0 1px 0 rgba(16,24,40,.03)}
+.table-wrap table:not(.nat) td{display:grid;grid-template-columns:66px minmax(0,1fr);gap:9px;align-items:start;padding:10px 11px;border-bottom:1px solid #edf0f4}
+.table-wrap table:not(.nat) td:last-child{border-bottom:0}
+.table-wrap table:not(.nat) td::before{content:attr(data-label);color:#667085;font-size:12px;font-weight:800;line-height:1.35}
+.table-wrap table:not(.nat) td:nth-child(2){grid-template-columns:1fr;padding-top:12px}
+.table-wrap table:not(.nat) td:nth-child(2)::before{content:"기관";margin-bottom:2px}
+.name{font-size:16px}
+.addr,.sat{font-size:12px}
+.status-pill{width:max-content}
+.beds{font-weight:850}
+.trend-btn{min-height:34px;padding:7px 9px}
+.message-badge{min-height:28px}
+.nat-table-wrap{padding:0 12px 4px;max-height:none;overflow:visible}
+table.nat{font-size:13px;table-layout:auto}
+table.nat th:nth-child(1),table.nat td:nth-child(1){width:48px}
+table.nat th:nth-child(3),table.nat td:nth-child(3){width:72px}
+table.nat th:nth-child(4),table.nat td:nth-child(4){width:104px}
+.nat-head{padding:14px 12px 4px}
+.nat-controls{padding:8px 12px 10px}
+.nat-note{margin:0 12px 14px}
+.close-btn{min-width:72px;height:38px}
+.avg-grid{grid-template-columns:1fr}
+.chart-box{height:260px}
+}
 </style>
 </head>
 <body>
@@ -25,7 +91,12 @@
 <div class="section"><h2>기관 목록</h2><div class="filters"><button class="filter active" data-region="all">전체</button><button class="filter" data-region="광주">광주</button><button class="filter" data-region="전남">전남</button><span class="label" style="margin-left:8px;color:#667085;font-size:13px;font-weight:600;align-self:center">정렬</span><button class="sortbtn active" data-sort="default">기본</button><button class="sortbtn" data-sort="sat">포화도순</button></div><p class="note">표의 병상 수는 현재 시점의 남은 병상/전체 병상입니다. 포화도는 (전체-남은 병상)/전체 병상으로 계산합니다. 일자별 그래프의 각 점은 당일 관측된 일반 병상 포화도가 가장 높았던 시점의 스냅샷입니다. 미수집 날짜는 비워 둡니다.</p></div>
 <div class="table-wrap"><table><thead><tr><th>지역</th><th>기관</th><th>유형</th><th>상태</th><th>일반</th><th>소아</th></tr></thead><tbody id="tbody"></tbody></table></div>
 </aside>
-<main id="map"></main>
+<section class="map-section" aria-label="광주·전남 응급의료기관 위치 지도">
+<details class="map-disclosure" id="mapDisclosure" open>
+<summary><span>지도는 따로 보기<span class="map-kicker">병상 목록을 먼저 읽고, 필요할 때 위치만 펼쳐 확인합니다.</span></span></summary>
+<div class="map-shell"><div id="map"></div></div>
+</details>
+</section>
 </div>
 <section class="national" id="national" aria-label="전국 응급실 포화 현황">
 <div class="nat-head"><h2>전국 응급실 포화 현황</h2><div class="nat-sub" id="natSub">불러오는 중…</div></div>
@@ -74,7 +145,8 @@ function latestRecord(code){return HISTORY.filter(h=>h.code===code).sort((a,b)=>
 let map=null;let group=null;const markers=[];
 function syncMapRegion(region='all'){if(!map||!group)return;group.clearLayers();markers.forEach(m=>{if(region==='all'||m.row.region===region)m.addTo(group)});if(group.getLayers().length)map.fitBounds(group.getBounds().pad(0.12))}
 function initMap(){const mapEl=document.getElementById('map');if(typeof L==='undefined'){mapEl.innerHTML='<div style="padding:22px;color:#667085;font-size:14px;line-height:1.5">지도 라이브러리를 불러오지 못했습니다. 기관 목록과 병상 정보는 정상 표시됩니다. 네트워크 연결 후 새로고침하면 지도가 표시됩니다.</div>';return}map=L.map('map',{preferCanvas:true}).setView([34.9,126.8],8);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);group=L.featureGroup().addTo(map);DATA.forEach(r=>{const color=gradeColor[r.grade]||'#667085';const marker=L.circleMarker([r.lat,r.lon],{radius:classRadius[r.classCode]||8,color:'#334155',weight:1.3,fillColor:color,fillOpacity:.86});marker.bindPopup(`<div class="popup"><h3>${esc(r.name)}</h3><p>${esc(r.region)} · ${esc(r.type)} · 2024 평가 ${esc(r.grade)}</p><p>일반 ${bedText(r.general_available,r.general_total)} / ${satText(r.general_saturation)}</p><p>소아 ${bedText(r.child_available,r.child_total)} / ${satText(r.child_saturation)}</p><button class="trend-btn" onclick="openTrend('${esc(r.code)}')">포화도 추이 보기</button></div>`);marker.row=r;marker.addTo(group);markers.push(marker)});if(group.getLayers().length)map.fitBounds(group.getBounds().pad(0.12));const legend=L.control({position:'bottomright'});legend.onAdd=function(){const div=L.DomUtil.create('div','legend');div.innerHTML='<b>2024 평가등급</b><br><span class="dot" style="background:#198754"></span>A등급<br><span class="dot" style="background:#d59000"></span>B등급<br><span class="dot" style="background:#d92d20"></span>C등급<br><span class="dot" style="background:#667085"></span>미분류<br><span class="sub">원 크기: 기관 유형</span>';return div};legend.addTo(map)}
-function renderTable(region='all'){activeRegion=region;const tbody=document.getElementById('tbody');let filtered=region==='all'?DATA:DATA.filter(r=>r.region===region);if(sortMode==='sat')filtered=[...filtered].sort((a,b)=>(overallSat(b)??-1)-(overallSat(a)??-1));tbody.innerHTML=filtered.map(r=>`<tr data-code="${esc(r.code)}"><td>${esc(r.region)}</td><td><div class="name-line"><span class="name">${esc(r.name)}</span>${gradeBadge(r.grade)}${messageBadge(r)}</div>${messageList(r)}<button class="trend-btn" data-trend="${esc(r.code)}" title="일자별 일반·소아 응급실 병상 포화도 추이">포화도 추이</button></td><td>${esc(r.type)}</td><td>${statusPill(r)}</td><td><div class="beds">${bedText(r.general_available,r.general_total)}</div>${bar(r.general_saturation)}</td><td><div class="beds">${bedText(r.child_available,r.child_total)}</div>${bar(r.child_saturation)}</td></tr>`).join('');[...tbody.querySelectorAll('button[data-message]')].forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const box=document.getElementById(`msg-${btn.dataset.message}`);if(box)box.classList.toggle('open')}));[...tbody.querySelectorAll('button[data-trend]')].forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openTrend(btn.dataset.trend)}));[...tbody.querySelectorAll('tr')].forEach(tr=>tr.addEventListener('click',()=>{const m=markers.find(x=>x.row.code===tr.dataset.code);if(m&&map){map.setView(m.getLatLng(),12);m.openPopup()}}));syncMapRegion(region)}
+function revealMap(){const details=document.getElementById('mapDisclosure');if(details&&!details.open)details.open=true;if(map)setTimeout(()=>map.invalidateSize(),80)}
+function renderTable(region='all'){activeRegion=region;const tbody=document.getElementById('tbody');let filtered=region==='all'?DATA:DATA.filter(r=>r.region===region);if(sortMode==='sat')filtered=[...filtered].sort((a,b)=>(overallSat(b)??-1)-(overallSat(a)??-1));tbody.innerHTML=filtered.map(r=>`<tr data-code="${esc(r.code)}"><td data-label="지역">${esc(r.region)}</td><td data-label="기관"><div class="name-line"><span class="name">${esc(r.name)}</span>${gradeBadge(r.grade)}${messageBadge(r)}</div>${messageList(r)}<button class="trend-btn" data-trend="${esc(r.code)}" title="일자별 일반·소아 응급실 병상 포화도 추이">포화도 추이</button></td><td data-label="유형">${esc(r.type)}</td><td data-label="상태">${statusPill(r)}</td><td data-label="일반"><div class="beds">${bedText(r.general_available,r.general_total)}</div>${bar(r.general_saturation)}</td><td data-label="소아"><div class="beds">${bedText(r.child_available,r.child_total)}</div>${bar(r.child_saturation)}</td></tr>`).join('');[...tbody.querySelectorAll('button[data-message]')].forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();const box=document.getElementById(`msg-${btn.dataset.message}`);if(box)box.classList.toggle('open')}));[...tbody.querySelectorAll('button[data-trend]')].forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openTrend(btn.dataset.trend)}));[...tbody.querySelectorAll('tr')].forEach(tr=>tr.addEventListener('click',()=>{const m=markers.find(x=>x.row.code===tr.dataset.code);if(m&&map){revealMap();map.setView(m.getLatLng(),12);m.openPopup()}}));syncMapRegion(region)}
 function closeTrendPanel(){document.getElementById('trendPanel').classList.remove('open');document.getElementById('trendBackdrop').classList.remove('open')}
 function openTrend(code){activeCode=code;const row=DATA.find(r=>r.code===code);if(!row)return;document.getElementById('trendTitle').textContent=`${row.name} 병상 포화도`;document.getElementById('trendMeta').textContent=`${row.region} · ${row.type} · 2024 평가 ${row.grade} · 현재 일반 ${bedText(row.general_available,row.general_total)} / 소아 ${bedText(row.child_available,row.child_total)}`;document.getElementById('trendBackdrop').classList.add('open');document.getElementById('trendPanel').classList.add('open');const m=markers.find(x=>x.row.code===code);if(m&&map)map.setView(m.getLatLng(),12);drawTrend()}
 function drawTrend(){
@@ -141,9 +213,11 @@ document.getElementById('closeTrend').addEventListener('click',closeTrendPanel);
 document.getElementById('trendBackdrop').addEventListener('click',closeTrendPanel);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTrendPanel()});
 (function(){const el=document.querySelector('header .sub');if(!el)return;const m=el.textContent.match(/지도 생성 ([0-9T:+\-.]+)/);if(!m)return;const d=new Date(m[1]);if(isNaN(d))return;const s=d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});el.textContent=el.textContent.replace(m[1],s+' KST')})();
+function setupMapDisclosure(){const details=document.getElementById('mapDisclosure');if(!details)return;const mobile=window.matchMedia('(max-width: 640px)');if(mobile.matches)details.open=false;details.addEventListener('toggle',()=>{if(details.open&&map)setTimeout(()=>map.invalidateSize(),80)});mobile.addEventListener?.('change',e=>{details.open=!e.matches;if(details.open&&map)setTimeout(()=>map.invalidateSize(),80)})}
 renderTable();
 renderNational();
 initMap();
+setupMapDisclosure();
 syncMapRegion(activeRegion);
 </script>
 </body>
