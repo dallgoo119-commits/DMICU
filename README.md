@@ -12,8 +12,45 @@ https://dallgoo119-commits.github.io/DMICU/
 - `gwangju_emergency_map.html`: 보고서에 포함된 광주·전남 응급의료기관 실시간 병상 지도
 - `visitor-stats.json`: 공람 페이지 접속 통계 표시용 JSON 자리
 - `ems_anonymous_feedback_template.md`: 광주·전남 구급대원 무기명 현장 제보 설문 문항 템플릿
-- `.github/workflows/update-beds.yml`: 2시간마다 병상 현황을 다시 수집해 지도 HTML을 자동 커밋
+- `.github/workflows/update-beds.yml`: 외부 cron 또는 수동 실행으로 병상 현황을 다시 수집해 지도 HTML을 자동 커밋
 - `scripts/update_emergency_map.py`: 내 손안의 응급실 API를 호출해 병상 현황과 추이 데이터를 갱신
+
+## Emergency Bed Map Auto Update
+
+가장 안정적인 운영 방식은 GitHub 자체 `schedule`에만 의존하지 않고, 외부 cron 서비스가 GitHub Actions를 직접 깨우는 방식입니다. GitHub 예약 실행은 저장소 부하와 GitHub 큐 상태에 따라 지연되거나 드롭될 수 있으므로, 이 저장소의 `schedule`은 6시간마다 도는 보조 안전망으로만 둡니다.
+
+### 1. GitHub 토큰 만들기
+
+GitHub에서 fine-grained personal access token을 하나 만들고 다음처럼 제한합니다.
+
+- Repository access: `dallgoo119-commits/DMICU`만 선택
+- Permissions: `Contents` read/write, `Metadata` read-only
+- Expiration: 가능하면 90일 이상 또는 운영 정책에 맞게 설정
+
+토큰은 외부 cron 서비스의 Authorization 헤더에만 넣고 저장소 파일에는 절대 커밋하지 않습니다.
+
+### 2. cron-job.org 예시
+
+cron-job.org에서 새 작업을 만들고 다음 값으로 설정합니다.
+
+- URL: `https://api.github.com/repos/dallgoo119-commits/DMICU/dispatches`
+- Method: `POST`
+- Schedule: every 30 minutes
+- Timezone: `Asia/Seoul`
+- Header `Accept`: `application/vnd.github+json`
+- Header `Authorization`: `Bearer YOUR_GITHUB_TOKEN`
+- Header `X-GitHub-Api-Version`: `2022-11-28`
+- Body:
+
+```json
+{"event_type":"update-beds"}
+```
+
+정상 호출이면 GitHub API가 `204 No Content`를 반환하고, Actions 탭에 `Update emergency bed map` 실행이 새로 생깁니다.
+
+### 3. 수동 실행
+
+외부 cron 없이도 GitHub Actions 탭에서 `Update emergency bed map` workflow를 선택해 `Run workflow`로 즉시 갱신할 수 있습니다.
 
 ## Public Comments
 

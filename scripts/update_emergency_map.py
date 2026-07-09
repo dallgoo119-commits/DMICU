@@ -447,10 +447,16 @@ def update_static_text(source, captured_at, stats):
         source,
         count=1,
     )
+    source = re.sub(
+        r"병원별 추이 버튼을 누르면 .*?확인할 수 있습니다\.",
+        "병원별 추이 버튼을 누르면 외부 cron으로 주기 갱신되는 최신 병상 현황과 저장된 일자별 포화도 그래프를 확인할 수 있습니다.",
+        source,
+        count=1,
+    )
     # 과거 버전이 매 실행마다 동일 문구를 중복 삽입하던 버그가 있어, 반복을 1회로 정규화한다(멱등)
     source = re.sub(
         r"(?:2시간마다 갱신되는 최신 병상 현황과 )+",
-        "2시간마다 갱신되는 최신 병상 현황과 ",
+        "외부 cron으로 주기 갱신되는 최신 병상 현황과 ",
         source,
         count=1,
     )

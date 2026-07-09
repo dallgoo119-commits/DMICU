@@ -2,10 +2,12 @@ name: Update emergency bed map
 
 on:
   schedule:
-    # GitHub 스케줄은 부하 시 지연·드롭됨(실측: 하루 3~4회만 실행).
-    # 30분 간격으로 시도해 실효 주기를 확보한다. concurrency가 중복 실행을 정리한다.
-    - cron: "13,43 * * * *"
+    # GitHub 자체 스케줄은 지연·드롭될 수 있으므로 보조 안전망으로만 둔다.
+    # 실제 주기 실행은 외부 cron이 repository_dispatch 또는 workflow_dispatch로 깨운다.
+    - cron: "17 */6 * * *"
   workflow_dispatch:
+  repository_dispatch:
+    types: [update-beds]
 
 permissions:
   contents: write
