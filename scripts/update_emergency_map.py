@@ -78,6 +78,8 @@ def fetch_national(items_by_code, failed_labels):
                 region = "전남"
             else:
                 region = label
+            lat = pick(item, "latitude", "lat", "wgs84Lat")
+            lon = pick(item, "longitude", "lon", "lng", "wgs84Lon")
             row = {
                 "c": emog or f"{region}|{pick(item, 'emergencyRoomName', 'dutyName', 'hospitalName') or ''}",
                 "r": region,
@@ -90,6 +92,9 @@ def fetch_national(items_by_code, failed_labels):
                 "o": beds_total,
                 "s": saturation,
                 "m": len(collect_messages(item)),
+                "lat": float(lat) if lat is not None else None,
+                "lon": float(lon) if lon is not None else None,
+                "addr": pick(item, "address", "dutyAddr", "addr") or "",
             }
             history_rows.append(row)
             if saturation < NATIONAL_THRESHOLD:
@@ -441,6 +446,9 @@ def update_national_history(history, rows, captured_at):
             "total": row["o"],
             "saturation": row["s"],
             "message_count": row["m"],
+            "lat": row.get("lat"),
+            "lon": row.get("lon"),
+            "address": row.get("addr", ""),
             "updated_at": captured_at,
         }
         existing = by_key.get(key)
