@@ -75,6 +75,27 @@ table.nat th:nth-child(4),table.nat td:nth-child(4){width:104px}
 .avg-grid{grid-template-columns:1fr}
 .chart-box{height:260px}
 }
+.national{max-width:1240px;margin:0 auto;border-left:1px solid #edf0f4;border-right:1px solid #edf0f4}
+.nat-head{padding:22px 24px 6px}
+.nat-controls{padding:10px 24px 14px}
+.nat-table-wrap{padding:0 24px 8px;max-height:min(78vh,860px);overflow:auto}
+table.nat th:nth-child(1),table.nat td:nth-child(1){width:96px}
+table.nat th:nth-child(3),table.nat td:nth-child(3){width:140px}
+table.nat th:nth-child(4),table.nat td:nth-child(4){width:260px}
+table.nat th,table.nat td{padding:13px 12px;font-size:15px}
+table.nat .bar{height:12px}
+.nat-note{margin:0 24px 20px}
+@media(max-width:980px){
+.national{max-width:none;margin:0;border-left:0;border-right:0}
+.nat-head{padding:18px 16px 6px}
+.nat-controls{padding:10px 16px 14px}
+.nat-table-wrap{padding:0 16px 8px;max-height:min(78vh,720px);overflow:auto}
+table.nat th:nth-child(1),table.nat td:nth-child(1){width:72px}
+table.nat th:nth-child(3),table.nat td:nth-child(3){width:112px}
+table.nat th:nth-child(4),table.nat td:nth-child(4){width:190px}
+table.nat th,table.nat td{padding:12px 10px;font-size:14px}
+.nat-note{margin:0 16px 18px}
+}
 </style>
 </head>
 <body>

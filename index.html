@@ -267,7 +267,7 @@ p { margin: 0 0 14px; }
 }
 .map-frame {
   width: 100%;
-  min-height: 1180px;
+  min-height: 1560px;
   border: 1px solid var(--line);
   display: block;
 }
@@ -615,7 +615,7 @@ a {
   .visitor-grid { grid-template-columns: 1fr; }
   .summary-row { grid-template-columns: 1fr; gap: 4px; }
   .comment-panel { padding: 16px 16px 18px; }
-  .map-frame { min-height: 920px; }
+  .map-frame { min-height: 1420px; }
 }
 @media (max-width: 640px) {
   .page { padding: 0 12px; margin-top: 14px; }
@@ -633,7 +633,7 @@ a {
     overflow-x: auto;
     white-space: nowrap;
   }
-  .map-frame { min-height: 760px; }
+  .map-frame { min-height: 1320px; }
 }
 @media print {
   body { background: white; }
@@ -1148,7 +1148,7 @@ function resizeEmergencyMapFrame() {
     const height = Math.max(
       doc.body?.scrollHeight || 0,
       doc.documentElement?.scrollHeight || 0,
-      760
+      1320
     );
     frame.style.height = `${height + 24}px`;
   } catch (error) {
