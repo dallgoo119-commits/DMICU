@@ -3,8 +3,8 @@ name: Update emergency bed map
 on:
   schedule:
     # GitHub 자체 스케줄은 지연·드롭될 수 있으므로 보조 안전망으로만 둔다.
-    # 실제 주기 실행은 외부 cron이 repository_dispatch 또는 workflow_dispatch로 깨운다.
-    - cron: "17 */6 * * *"
+    # GitHub Actions schedule can be delayed, but this keeps the target cadence at 30 minutes.
+    - cron: "*/30 * * * *"
   workflow_dispatch:
   repository_dispatch:
     types: [update-beds]
