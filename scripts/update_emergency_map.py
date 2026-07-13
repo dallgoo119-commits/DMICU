@@ -378,13 +378,64 @@ def fetch_rows(previous_by_code, items):
 HISTORY_RETENTION_DAYS = 365
 
 
+def rounded(value):
+    return None if value is None else round(value, 1)
+
+
+def merge_saturation(existing, prefix, value):
+    """Accumulate one day's samples while keeping the public field as daily average."""
+    count_key = f"{prefix}_sample_count"
+    avg_key = f"{prefix}_saturation_avg"
+    min_key = f"{prefix}_saturation_min"
+    max_key = f"{prefix}_saturation_max"
+    public_key = f"{prefix}_saturation"
+    if value is None:
+        return
+    old_count = existing.get(count_key)
+    old_avg = existing.get(avg_key, existing.get(public_key))
+    if not old_count or old_avg is None:
+        old_count = 0
+        old_avg = 0
+    new_count = old_count + 1
+    new_avg = ((old_avg * old_count) + value) / new_count
+    existing[count_key] = new_count
+    existing[avg_key] = rounded(new_avg)
+    existing[min_key] = rounded(
+        value if existing.get(min_key) is None else min(existing[min_key], value)
+    )
+    existing[max_key] = rounded(
+        value if existing.get(max_key) is None else max(existing[max_key], value)
+    )
+    existing[public_key] = existing[avg_key]
+
+
+def merge_national_saturation(existing, value):
+    if value is None:
+        return
+    old_count = existing.get("sample_count")
+    old_avg = existing.get("saturation_avg", existing.get("saturation"))
+    if not old_count or old_avg is None:
+        old_count = 0
+        old_avg = 0
+    new_count = old_count + 1
+    new_avg = ((old_avg * old_count) + value) / new_count
+    existing["sample_count"] = new_count
+    existing["saturation_avg"] = rounded(new_avg)
+    existing["saturation_min"] = rounded(
+        value if existing.get("saturation_min") is None else min(existing["saturation_min"], value)
+    )
+    existing["saturation_max"] = rounded(
+        value if existing.get("saturation_max") is None else max(existing["saturation_max"], value)
+    )
+    existing["saturation"] = existing["saturation_avg"]
+
+
 def update_history(history, rows, captured_at):
     """일자별 기록을 갱신한다.
 
-    각 (날짜, 기관)에는 그날 관측된 일반 병상 포화도가 가장 높았던 시점의
-    스냅샷을 보관한다(동률이면 최신). 과거 방식(마지막 실행값 보관)은 UTC 일자
-    경계 특성상 항상 아침 시간대 저점만 남는 편향이 있어 교체했다.
-    보존 기간을 넘긴 기록은 파일 크기 무한 증식을 막기 위해 잘라낸다.
+    30분 주기 수집값이 하루 안에서 사라지지 않도록 기관별·일자별로
+    평균, 최소, 최대 포화도와 샘플 수를 누적한다. 병상 수와 메시지는 최신
+    스냅샷을 보관하고, 보존 기간을 넘긴 기록은 파일 크기 무한 증식을 막기 위해 잘라낸다.
     """
     today = captured_at[:10]
     cutoff = (
@@ -395,35 +446,37 @@ def update_history(history, rows, captured_at):
         (row["date"], row["code"]): row for row in history if row["date"] >= cutoff
     }
 
-    def peak(record):
-        value = record.get("general_saturation")
-        return -1 if value is None else value
-
     for row in rows:
         key = (today, row["code"])
-        candidate = {
+        existing = by_key.get(key) or {
             "date": today,
             "region": row["region"],
             "code": row["code"],
             "name": row["name"],
             "type": row["type"],
             "grade": row["grade"],
-            "general_available": row["general_available"],
-            "general_total": row["general_total"],
-            "general_saturation": row["general_saturation"],
-            "child_available": row["child_available"],
-            "child_total": row["child_total"],
-            "child_saturation": row["child_saturation"],
-            "updated_at": captured_at,
         }
-        existing = by_key.get(key)
-        if existing is None or peak(candidate) >= peak(existing):
-            by_key[key] = candidate
+        existing.update(
+            {
+                "region": row["region"],
+                "name": row["name"],
+                "type": row["type"],
+                "grade": row["grade"],
+                "general_available": row["general_available"],
+                "general_total": row["general_total"],
+                "child_available": row["child_available"],
+                "child_total": row["child_total"],
+                "updated_at": captured_at,
+            }
+        )
+        merge_saturation(existing, "general", row["general_saturation"])
+        merge_saturation(existing, "child", row["child_saturation"])
+        by_key[key] = existing
     return [by_key[key] for key in sorted(by_key)]
 
 
 def update_national_history(history, rows, captured_at):
-    """내 손안의 응급실 전국 전체 기관의 일자별 최고 포화 스냅샷을 저장한다."""
+    """내 손안의 응급실 전국 전체 기관의 일자별 평균·최소·최대 포화도를 저장한다."""
     today = captured_at[:10]
     cutoff = (
         datetime.fromisoformat(captured_at).date()
@@ -436,24 +489,29 @@ def update_national_history(history, rows, captured_at):
     for row in rows:
         code = row.get("c") or f'{row["r"]}|{row["n"]}'
         key = (today, code)
-        candidate = {
+        existing = by_key.get(key) or {
             "date": today,
             "region": row["r"],
             "code": code,
             "name": row["n"],
             "type": row["t"],
-            "available": row["a"],
-            "total": row["o"],
-            "saturation": row["s"],
-            "message_count": row["m"],
-            "lat": row.get("lat"),
-            "lon": row.get("lon"),
-            "address": row.get("addr", ""),
-            "updated_at": captured_at,
         }
-        existing = by_key.get(key)
-        if existing is None or candidate["saturation"] >= existing.get("saturation", -1):
-            by_key[key] = candidate
+        existing.update(
+            {
+                "region": row["r"],
+                "name": row["n"],
+                "type": row["t"],
+                "available": row["a"],
+                "total": row["o"],
+                "message_count": row["m"],
+                "lat": row.get("lat"),
+                "lon": row.get("lon"),
+                "address": row.get("addr", ""),
+                "updated_at": captured_at,
+            }
+        )
+        merge_national_saturation(existing, row["s"])
+        by_key[key] = existing
     return [by_key[key] for key in sorted(by_key)]
 
 
