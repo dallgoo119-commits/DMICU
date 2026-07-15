@@ -316,12 +316,12 @@ function drawTrend(){
     data:{
       labels,
       datasets:[
-        {label:'일반 평균 포화도',data:general,borderColor:'#d92d20',backgroundColor:'#d92d20',spanGaps:false,tension:.25,pointRadius:4},
-        {label:'일반 최저',data:generalMin,borderColor:'#f97316',backgroundColor:'#f97316',spanGaps:false,tension:.15,pointRadius:0,borderDash:[5,5]},
-        {label:'일반 최고',data:generalMax,borderColor:'#b42318',backgroundColor:'#b42318',spanGaps:false,tension:.15,pointRadius:0,borderDash:[5,5]},
-        {label:'소아 평균 포화도',data:child,borderColor:'#2563eb',backgroundColor:'#2563eb',spanGaps:false,tension:.25,pointRadius:4},
-        {label:'소아 최저',data:childMin,borderColor:'#60a5fa',backgroundColor:'#60a5fa',spanGaps:false,tension:.15,pointRadius:0,borderDash:[5,5]},
-        {label:'소아 최고',data:childMax,borderColor:'#1d4ed8',backgroundColor:'#1d4ed8',spanGaps:false,tension:.15,pointRadius:0,borderDash:[5,5]}
+        {label:'일반 평균 포화도',data:general,borderColor:'#d92d20',backgroundColor:'#d92d20',spanGaps:false,tension:.25,borderWidth:2,pointRadius:3},
+        {label:'일반 최저',data:generalMin,borderColor:'#f97316',backgroundColor:'#f97316',spanGaps:false,tension:.15,borderWidth:1.25,pointRadius:0,borderDash:[4,5]},
+        {label:'일반 최고',data:generalMax,borderColor:'#b42318',backgroundColor:'#b42318',spanGaps:false,tension:.15,borderWidth:1.25,pointRadius:0,borderDash:[4,5]},
+        {label:'소아 평균 포화도',data:child,borderColor:'#2563eb',backgroundColor:'#2563eb',spanGaps:false,tension:.25,borderWidth:2,pointRadius:3},
+        {label:'소아 최저',data:childMin,borderColor:'#60a5fa',backgroundColor:'#60a5fa',spanGaps:false,tension:.15,borderWidth:1.25,pointRadius:0,borderDash:[4,5]},
+        {label:'소아 최고',data:childMax,borderColor:'#1d4ed8',backgroundColor:'#1d4ed8',spanGaps:false,tension:.15,borderWidth:1.25,pointRadius:0,borderDash:[4,5]}
       ]
     },
     options:{
@@ -371,9 +371,9 @@ function drawNationalTrend(){
   trendChart=new Chart(ctx,{
     type:'line',
     data:{labels,datasets:[
-      {label:'일반 평균 포화도',data:general,borderColor:'#b42318',backgroundColor:'#b42318',spanGaps:false,tension:.25,pointRadius:4},
-      {label:'일반 최저',data:generalMin,borderColor:'#f97316',backgroundColor:'#f97316',spanGaps:false,tension:.15,pointRadius:0,borderDash:[5,5]},
-      {label:'일반 최고',data:generalMax,borderColor:'#7f1d1d',backgroundColor:'#7f1d1d',spanGaps:false,tension:.15,pointRadius:0,borderDash:[5,5]}
+      {label:'일반 평균 포화도',data:general,borderColor:'#b42318',backgroundColor:'#b42318',spanGaps:false,tension:.25,borderWidth:2,pointRadius:3},
+      {label:'일반 최저',data:generalMin,borderColor:'#f97316',backgroundColor:'#f97316',spanGaps:false,tension:.15,borderWidth:1.25,pointRadius:0,borderDash:[4,5]},
+      {label:'일반 최고',data:generalMax,borderColor:'#7f1d1d',backgroundColor:'#7f1d1d',spanGaps:false,tension:.15,borderWidth:1.25,pointRadius:0,borderDash:[4,5]}
     ]},
     options:{
       responsive:true,
