@@ -223,7 +223,8 @@ function satText(v){return v==null?'포화 -':`포화 ${v}%`}
 function satLevel(v){if(v==null)return 'gray';if(v>=80)return 'red';if(v>=60)return 'yellow';return 'green'}
 function statusText(v){if(v==null)return '미수집';if(v>=80)return '포화';if(v>=60)return '주의';return '여유'}
 function overallSat(r){const vals=[r.general_saturation,r.child_saturation].filter(v=>v!=null);if(!vals.length)return null;return Math.max(...vals)}
-function statusPill(r){const v=overallSat(r);const level=satLevel(v);return `<span class="status-pill status-${level}"><span class="status-dot"></span>${statusText(v)} ${v==null?'-':v+'%'}</span>`}
+function statusAvailabilityText(r){const useChild=r.child_saturation!=null&&(r.general_saturation==null||r.child_saturation>r.general_saturation);const available=useChild?r.child_available:r.general_available;const total=useChild?r.child_total:r.general_total;if(available==null||!total)return '병상 미수집';if(available<0)return `초과 ${Math.abs(available)}개`;return `남은 ${available}개`}
+function statusPill(r){const v=overallSat(r);const level=satLevel(v);return `<span class="status-pill status-${level}"><span class="status-dot"></span>${statusAvailabilityText(r)}</span>`}
 function messageBadge(r){return r.message_count>0?`<button class="message-badge" data-message="${esc(r.code)}">제한 ${r.message_count}건</button>`:''}
 function messageList(r){if(!r.messages||!r.messages.length)return '';return `<div class="message-list" id="msg-${esc(r.code)}">${r.messages.map((m,i)=>`<div class="message-item"><span class="message-meta">${i+1}. ${esc(m.group)}${m.category?' · '+esc(m.category):''}${m.reason?' · '+esc(m.reason):''}${m.detail?' · '+esc(m.detail):''}</span>${esc(m.message)}</div>`).join('')}</div>`}
 function bar(v){const w=v==null?0:Math.max(0,Math.min(100,v));const level=satLevel(v);return`<div class="bar"><div class="fill fill-${level}" style="width:${w}%"></div></div><div class="sat">${satText(v)}</div>`}
