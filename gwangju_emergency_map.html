@@ -116,10 +116,10 @@ table.nat th,table.nat td{padding:12px 10px;font-size:14px}
 .trend-head{padding:18px 20px}
 .trend-head h2{font-size:28px;line-height:1.12;letter-spacing:0}
 .trend-head p{font-size:17px;line-height:1.45;color:#667085}
-.trend-body{padding:18px 20px 22px}
-.periods{top:82px;margin:0 0 16px;padding:10px 0}
+.trend-body{padding:18px 20px 22px;display:flex;flex-direction:column}
+.periods{order:1;top:82px;margin:0 0 16px;padding:10px 0}
 .periods button{min-width:64px;min-height:50px;border-radius:8px;font-size:20px;line-height:1;font-weight:850}
-.avg-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 15px;margin-bottom:20px}
+.avg-grid{order:4;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 15px;margin:14px 0 0}
 .avg-card{min-height:100px;padding:15px 17px;display:flex;flex-direction:column;justify-content:center}
 .avg-card strong{font-size:32px;line-height:1.18;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 #avgGeneral,#avgChild{font-size:30px;line-height:1.24}
@@ -127,8 +127,8 @@ table.nat th,table.nat td{padding:12px 10px;font-size:14px}
 .avg-card .stat-parts b{display:grid;gap:2px;min-width:0;font-size:24px;line-height:1.08;font-weight:900;white-space:nowrap}
 .avg-card .stat-parts em{display:block;font-size:13px;line-height:1.1;font-style:normal;color:#667085;font-weight:800}
 .avg-card span{font-size:16px;line-height:1.45;margin-top:6px;word-break:keep-all;overflow-wrap:break-word}
-.chart-box{height:450px;padding:18px 18px 10px}
-.missing-note{margin-top:14px;padding:0 2px;font-size:16px;line-height:1.65;word-break:keep-all;overflow-wrap:break-word}
+.chart-box{order:2;height:520px;padding:18px 18px 10px}
+.missing-note{order:3;margin-top:14px;padding:0 2px;font-size:16px;line-height:1.65;word-break:keep-all;overflow-wrap:break-word}
 @media(max-width:720px){
 .trend-head{padding:14px 13px}.trend-head h2{font-size:22px}.trend-head p{font-size:13px}
 .periods{top:70px}.periods button{min-width:52px;min-height:42px;font-size:16px}
