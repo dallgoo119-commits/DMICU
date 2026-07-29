@@ -14,10 +14,14 @@ https://dallgoo119-commits.github.io/DMICU/
 - `ems_anonymous_feedback_template.md`: 광주·전남 구급대원 무기명 현장 제보 설문 문항 템플릿
 - `.github/workflows/update-beds.yml`: 외부 cron 또는 수동 실행으로 병상 현황을 다시 수집해 지도 HTML을 자동 커밋
 - `scripts/update_emergency_map.py`: 내 손안의 응급실 API를 호출해 병상 현황과 추이 데이터를 갱신
+- `data/national_snapshots/YYYY-MM-DD.jsonl`: 완전 수집에 성공한 전국 기관의 30분 단위 연구용 원시 스냅샷
+- `data/national_daily/YYYY-MM-DD.json`: 같은 날짜의 기관별 평균·최저·최고·표본 수를 정리한 연구용 일집계
+
+전국 연구용 파일은 화면에서 직접 노출하지 않지만 공개 저장소에 함께 보존됩니다. 부분 지역 수집은 저장하지 않고, 완전 수집된 기관 단위 공개 API 값만 기록합니다. 현재 약 414~415개 유효 기관의 실제 생성 파일 기준 예상 용량은 30분 스냅샷 약 180MB/년, 일집계 약 70MB/년으로 합계 약 250MB/년입니다.
 
 ## Emergency Bed Map Auto Update
 
-가장 안정적인 운영 방식은 GitHub 자체 `schedule`에만 의존하지 않고, 외부 cron 서비스가 GitHub Actions를 직접 깨우는 방식입니다. GitHub 예약 실행은 저장소 부하와 GitHub 큐 상태에 따라 지연되거나 드롭될 수 있으므로, 이 저장소의 `schedule`은 6시간마다 도는 보조 안전망으로만 둡니다.
+가장 안정적인 운영 방식은 GitHub 자체 `schedule`에만 의존하지 않고, 외부 cron 서비스가 GitHub Actions를 직접 깨우는 방식입니다. 현재 저장소의 `schedule`과 외부 cron 목표 주기는 모두 30분이지만, GitHub 예약 실행은 저장소 부하와 GitHub 큐 상태에 따라 지연되거나 드롭될 수 있습니다.
 
 ### 1. GitHub 토큰 만들기
 

@@ -28,11 +28,20 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run updater unit tests
+        run: python -m unittest discover -s tests -p "test_*.py"
+
+      - name: Validate dashboard logic
+        run: node --test tests/dashboard_logic.test.mjs
+
       - name: Refresh emergency bed map
         run: python scripts/update_emergency_map.py
+
+      - name: Validate refreshed dashboard artifact
+        run: node --test tests/dashboard_logic.test.mjs
 
       - name: Commit refreshed map
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Update emergency bed map"
-          file_pattern: gwangju_emergency_map.html index.html
+          file_pattern: gwangju_emergency_map.html index.html data/national_daily/*.json data/national_snapshots/*.jsonl
