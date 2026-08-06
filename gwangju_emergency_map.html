@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>광주응급실·전남응급실 실시간 병상 현황 지도 | DMICU</title>
-<meta name="description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황, 실시간 포화도, 병원 위치와 기관별 추이를 확인하는 지도입니다.">
+<title>광주응급실·전남응급실 최근 수집 병상 현황 지도 | DMICU</title>
+<meta name="description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황과 포화도 추이를 약 30분 주기로 수집해 제공하는 참고용 지도입니다.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://dallgoo119-commits.github.io/DMICU/gwangju_emergency_map.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="DMICU">
-<meta property="og:title" content="광주응급실·전남응급실 실시간 병상 현황 지도">
-<meta property="og:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황, 실시간 포화도, 병원 위치와 기관별 추이를 확인하는 지도입니다.">
+<meta property="og:title" content="광주응급실·전남응급실 최근 수집 병상 현황 지도">
+<meta property="og:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황과 포화도 추이를 약 30분 주기로 수집해 제공하는 참고용 지도입니다.">
 <meta property="og:url" content="https://dallgoo119-commits.github.io/DMICU/gwangju_emergency_map.html">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="광주응급실·전남응급실 실시간 병상 현황 지도">
-<meta name="twitter:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황, 실시간 포화도, 병원 위치와 기관별 추이를 확인하는 지도입니다.">
+<meta name="twitter:title" content="광주응급실·전남응급실 최근 수집 병상 현황 지도">
+<meta name="twitter:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황과 포화도 추이를 약 30분 주기로 수집해 제공하는 참고용 지도입니다.">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -187,10 +187,15 @@ button{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-sel
 .trend-btn{display:inline-flex;align-items:center;justify-content:center;line-height:1.2;appearance:none}
 .trend-panel{left:8px;right:auto;top:12px;transform:none;max-height:min(720px,calc(100vh - 24px))}
 @media(max-width:980px){.trend-panel{left:8px;right:auto;top:12px;transform:none;max-height:min(720px,calc(100vh - 16px))}}
+.usage-notice{margin:12px 16px 14px;padding:12px 14px;border:1px solid #f2cf66;border-left:5px solid #d59000;border-radius:8px;background:#fff8df;color:#344054;font-size:14px;line-height:1.55}
+.usage-notice strong{display:block;margin-bottom:2px;color:#7a4d00;font-size:15px}
+.usage-notice a{color:#8a1023;font-weight:850;text-underline-offset:2px}
+@media(max-width:640px){.usage-notice{margin:10px 12px 12px;padding:11px 12px;font-size:13px}.usage-notice strong{font-size:14px}}
 </style>
 </head>
 <body>
-<header><h1>광주응급실·전남응급실 실시간 병상 현황 지도</h1><div class="sub">광주 응급실과 전남 응급실의 일반·소아 병상 현황, 포화도, 병원 위치를 확인할 수 있습니다. 데이터: 내 손안의 응급실 공개 간편조회 API. 지도 생성 2026-08-06T22:31:55+09:00 · 병원별 추이 버튼을 누르면 30분 주기로 갱신되는 최신 병상 현황과 저장된 일자별 포화도 그래프를 확인할 수 있습니다.</div></header>
+<header><h1>광주응급실·전남응급실 최근 수집 병상 현황 지도</h1><div class="sub">광주 응급실과 전남 응급실의 일반·소아 병상 현황, 포화도, 병원 위치를 확인할 수 있습니다. 데이터: 내 손안의 응급실 공개 간편조회 API. 마지막 수집 2026-08-06T22:31:55+09:00 · 병원별 추이 버튼을 누르면 약 30분 주기로 갱신되는 병상 현황과 저장된 일자별 포화도 그래프를 확인할 수 있습니다.</div></header>
+<div class="usage-notice" role="note" aria-label="병상 정보 이용 안내"><strong>⚠ 참고용 안내</strong>본 지도는 광주·전남 응급실 병상 현황의 추세 관찰을 위한 참고용입니다. 데이터는 약 30분 주기로 갱신되므로 현재 시점의 실제 가용 병상 및 수용 가능 여부와 차이가 있을 수 있습니다. 응급환자 이송·내원 전에는 <a href="https://mediboard.nemc.or.kr/" target="_blank" rel="noopener noreferrer">내 손안의 응급실에서 최신 정보 확인</a> 후, 119 또는 해당 의료기관을 통해 실제 수용 가능 여부를 반드시 확인해 주세요.</div>
 <section class="field-mode" aria-label="내 주변 응급실 현장 지도">
   <div class="field-shell">
     <div class="field-head">
@@ -213,12 +218,12 @@ button{-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-sel
 <aside>
 <div class="cards">
 <div class="card"><strong>59</strong><span>응급의료기관 등<br>광주 21 / 전남 38</span></div>
-<div class="card"><strong>남은 468 / 전체 623</strong><span>일반 응급실 비음수 빈 병상 합/전체 병상<br>실시간 포화 24.9%</span></div>
-<div class="card"><strong>남은 22 / 전체 25</strong><span>소아 응급실 비음수 빈 병상 합/전체 병상<br>실시간 포화 12.0%</span></div>
+<div class="card"><strong>남은 468 / 전체 623</strong><span>일반 응급실 비음수 빈 병상 합/전체 병상<br>최근 수집 포화 24.9%</span></div>
+<div class="card"><strong>남은 22 / 전체 25</strong><span>소아 응급실 비음수 빈 병상 합/전체 병상<br>최근 수집 포화 12.0%</span></div>
 <div class="card"><strong>A 10 / B 32 / C 15</strong><span>2024 평가등급<br>미분류 2</span></div>
 </div>
 <button class="nat-jump" id="natJump" hidden type="button"></button>
-<div class="section"><h2>기관 목록</h2><div class="filters"><button class="filter active" data-region="all">전체</button><button class="filter" data-region="광주">광주</button><button class="filter" data-region="전남">전남</button><span class="label" style="margin-left:8px;color:#667085;font-size:13px;font-weight:600;align-self:center">정렬</span><button class="sortbtn active" data-sort="default">기본</button><button class="sortbtn" data-sort="sat">포화도순</button></div><p class="note">표의 병상 수는 현재 시점의 남은 병상/전체 병상입니다. 포화도는 (전체-남은 병상)/전체 병상으로 계산합니다. 기간 통계에는 하루 2회 이상 반복 수집된 일평균만 사용하고, 과거 단일 스냅샷은 그래프의 참고 점으로만 표시합니다. 2026년 7월 30일 이후 새 기록은 한국시간(KST) 날짜로 집계하며, 이전 UTC 일경계 기록은 품질 안내에 별도 표시합니다.</p></div>
+<div class="section"><h2>기관 목록</h2><div class="filters"><button class="filter active" data-region="all">전체</button><button class="filter" data-region="광주">광주</button><button class="filter" data-region="전남">전남</button><span class="label" style="margin-left:8px;color:#667085;font-size:13px;font-weight:600;align-self:center">정렬</span><button class="sortbtn active" data-sort="default">기본</button><button class="sortbtn" data-sort="sat">포화도순</button></div><p class="note">표의 병상 수는 마지막 수집 시점의 남은 병상/전체 병상입니다. 포화도는 (전체-남은 병상)/전체 병상으로 계산하며, 실제 수용 가능 여부를 의미하지 않습니다. 기간 통계에는 하루 2회 이상 반복 수집된 일평균만 사용하고, 과거 단일 스냅샷은 그래프의 참고 점으로만 표시합니다. 2026년 7월 30일 이후 새 기록은 한국시간(KST) 날짜로 집계하며, 이전 UTC 일경계 기록은 품질 안내에 별도 표시합니다.</p></div>
 <div class="table-wrap"><table><thead><tr><th>지역</th><th>기관</th><th>유형</th><th>상태</th><th>일반</th><th>소아</th></tr></thead><tbody id="tbody"></tbody></table></div>
 </aside>
 <section class="map-section" aria-label="광주·전남 응급의료기관 위치 지도">
@@ -304,8 +309,8 @@ function setFieldStatus(text,tone='blue'){const el=document.getElementById('fiel
 function distanceKm(a,b,c,d){const R=6371;const toRad=x=>x*Math.PI/180;const dLat=toRad(c-a);const dLon=toRad(d-b);const lat1=toRad(a);const lat2=toRad(c);const h=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h))}
 function currentNationalRows(){const byCode=new Map();for(const h of NATIONAL_HISTORY){if(h.lat==null||h.lon==null)continue;const prev=byCode.get(h.code);const newer=!prev||String(h.date).localeCompare(String(prev.date))>0||(h.date===prev.date&&String(h.updated_at||'').localeCompare(String(prev.updated_at||''))>0);if(newer)byCode.set(h.code,h)}for(const r of DATA){if(r.lat==null||r.lon==null)continue;if(!byCode.has(r.code))byCode.set(r.code,{date:todayIso(),region:r.region,code:r.code,name:r.name,type:r.type,available:r.general_available,total:r.general_total,saturation:r.general_saturation,message_count:r.message_count,lat:r.lat,lon:r.lon,address:r.address,updated_at:''})}return [...byCode.values()]}
 function fieldColor(row){const level=satLevel(row.saturation);return level==='red'?'#d92d20':level==='yellow'?'#d59000':level==='green'?'#198754':'#667085'}
-function flexibility(row){const sat=row.saturation??100;const msg=row.message_count||0;if(sat>=80||row.available<=0||msg>=5)return{cls:'low',face:'>_<',label:'수용유연성 낮음'};if(sat>=60||msg>0)return{cls:'mid',face:'-_-',label:'수용유연성 보통'};return{cls:'good',face:'^^',label:'수용유연성 좋음'}}
-function flexPill(row){const f=flexibility(row);return `<span class="flex-pill flex-${f.cls}" title="포화도와 제한/공지 건수를 함께 본 현장 판단 보조 지표"><span class="flex-face">${f.face}</span>${f.label}</span>`}
+function flexibility(row){const sat=row.saturation??100;const msg=row.message_count||0;if(sat>=80||row.available<=0||msg>=5)return{cls:'low',face:'>_<',label:'병상자료상 혼잡'};if(sat>=60||msg>0)return{cls:'mid',face:'-_-',label:'병상자료상 주의'};return{cls:'good',face:'^^',label:'병상자료상 여유'}}
+function flexPill(row){const f=flexibility(row);return `<span class="flex-pill flex-${f.cls}" title="최근 수집 병상과 제한/공지 건수를 함께 본 참고 지표이며 실제 수용 가능 여부를 의미하지 않습니다"><span class="flex-face">${f.face}</span>${f.label}</span>`}
 function openAnyTrend(code){if(NATIONAL_HISTORY.some(h=>h.code===code))openNationalTrend(code);else openTrend(code)}
 function renderNearbyRows(rows){const list=document.getElementById('nearList');const count=document.getElementById('nearCount');if(!list||!count)return;count.textContent=rows.length?`${rows.length}곳 · 반경 ${fieldRadiusKm}km`:'0곳';if(!rows.length){list.innerHTML=`<div class="field-empty">반경 ${fieldRadiusKm}km 안에서 좌표와 병상값이 확인된 응급실이 없습니다. 반경을 넓히거나 현재 위치를 다시 확인하세요.</div>`;return}list.innerHTML=rows.slice(0,18).map(r=>`<div class="near-row" data-near="${esc(r.code)}"><div><div class="near-name">${esc(r.name)}</div><div class="near-meta">${esc(r.region)} · ${esc(r.type)} · ${r.distance.toFixed(1)}km</div></div><div class="near-beds"><strong>${bedText(r.available,r.total)}</strong><span>${satText(r.saturation)}</span></div>${flexPill(r)}${r.message_count>0?`<div class="near-alert">제한/공지 ${r.message_count}건 · 상세 추이에서 확인</div>`:''}</div>`).join('');[...list.querySelectorAll('[data-near]')].forEach(el=>el.addEventListener('click',()=>{const marker=fieldMarkers.find(m=>m.row.code===el.dataset.near);if(marker&&fieldMap){fieldMap.setView(marker.getLatLng(),13);marker.openPopup()}}))}
 function bindFieldPopupTrend(marker){marker.on('popupopen',e=>{const btn=e.popup.getElement()?.querySelector('button[data-field-trend]');if(btn)btn.addEventListener('click',ev=>{ev.stopPropagation();openAnyTrend(btn.dataset.fieldTrend)})})}
@@ -516,7 +521,7 @@ document.querySelectorAll('.periods button').forEach(btn=>btn.addEventListener('
 document.getElementById('closeTrend').addEventListener('click',closeTrendPanel);
 document.getElementById('trendBackdrop').addEventListener('click',closeTrendPanel);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTrendPanel()});
-(function(){const el=document.querySelector('header .sub');if(!el)return;const m=el.textContent.match(/지도 생성 ([0-9T:+\-.]+)/);if(!m)return;const d=new Date(m[1]);if(isNaN(d))return;const s=d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});el.textContent=el.textContent.replace(m[1],s+' KST')})();
+(function(){const el=document.querySelector('header .sub');if(!el)return;const m=el.textContent.match(/마지막 수집 ([0-9T:+\-.]+)/);if(!m)return;const d=new Date(m[1]);if(isNaN(d))return;const s=d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});el.textContent=el.textContent.replace(m[1],s+' KST')})();
 function setupMapDisclosure(){const details=document.getElementById('mapDisclosure');if(!details)return;const mobile=window.matchMedia('(max-width: 640px)');if(mobile.matches)details.open=false;details.addEventListener('toggle',()=>{if(details.open&&map)setTimeout(()=>map.invalidateSize(),80)});mobile.addEventListener?.('change',e=>{details.open=!e.matches;if(details.open&&map)setTimeout(()=>map.invalidateSize(),80)})}
 renderTable();
 renderNational();

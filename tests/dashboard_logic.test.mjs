@@ -13,6 +13,15 @@ const inlineScripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script
   .map((match) => match[1])
   .filter((source) => source.trim());
 
+test("dashboard prominently limits operational use of delayed bed data", () => {
+  assert.match(html, /참고용 안내/);
+  assert.match(html, /약 30분 주기로 갱신/);
+  assert.match(html, /실제 수용 가능 여부를 반드시 확인/);
+  assert.match(html, /https:\/\/mediboard\.nemc\.or\.kr\//);
+  assert.doesNotMatch(html, /수용유연성/);
+  assert.doesNotMatch(html, /실시간 포화/);
+});
+
 test("every inline dashboard script parses", () => {
   assert.ok(inlineScripts.length > 0);
   for (const source of inlineScripts) {

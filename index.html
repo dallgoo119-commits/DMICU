@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>광주응급실·전남응급실 병상 현황 지도 | DMICU</title>
-<meta name="description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황, 병상 포화도, 병원 위치를 확인할 수 있는 실시간 응급의료 지도입니다.">
+<meta name="description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황과 포화도 추이를 약 30분 주기로 수집해 제공하는 참고용 지도입니다.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="google-site-verification" content="pAnpj1STYh0t3a7dbsc1VUqx3i17T0tN63nv1zeVgFg">
 <link rel="canonical" href="https://dallgoo119-commits.github.io/DMICU/">
@@ -12,11 +12,11 @@
 <meta property="og:locale" content="ko_KR">
 <meta property="og:site_name" content="DMICU">
 <meta property="og:title" content="광주응급실·전남응급실 병상 현황 지도">
-<meta property="og:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황, 병상 포화도, 병원 위치를 확인할 수 있는 실시간 응급의료 지도입니다.">
+<meta property="og:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황과 포화도 추이를 약 30분 주기로 수집해 제공하는 참고용 지도입니다.">
 <meta property="og:url" content="https://dallgoo119-commits.github.io/DMICU/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="광주응급실·전남응급실 병상 현황 지도">
-<meta name="twitter:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황, 병상 포화도, 병원 위치를 확인할 수 있는 실시간 응급의료 지도입니다.">
+<meta name="twitter:description" content="광주응급실과 전남응급실의 일반·소아 응급실 병상 현황과 포화도 추이를 약 30분 주기로 수집해 제공하는 참고용 지도입니다.">
 <style>
 :root {
   --policy-red: #c8102e;
@@ -606,6 +606,25 @@ a {
   text-decoration: none;
   border-bottom: 1px solid rgba(200, 16, 46, .35);
 }
+.data-advisory {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #f2cf66;
+  border-left: 5px solid #d59000;
+  border-radius: 8px;
+  background: #fff8df;
+  color: #344054;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.data-advisory strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #7a4d00;
+  font-size: 15px;
+}
+.data-advisory a { font-weight: 800; }
 @media (max-width: 980px) {
   .journal-inner { align-items: start; flex-direction: column; }
   .issue { text-align: left; }
@@ -674,9 +693,13 @@ a {
     <header class="article-head">
       <div class="section-tag">Part 1 | Health Policy</div>
       <h1>광주응급실·전남응급실 병상 현황과 완결응급의료 Trinity 전략</h1>
-      <p class="subtitle">광주 응급실과 전남 응급실의 실시간 일반·소아 병상 현황과 포화도 추이를 확인하고, 권역 완결응급의료 정책을 함께 살펴봅니다.</p>
+      <p class="subtitle">광주 응급실과 전남 응급실의 최근 수집 일반·소아 병상 현황과 포화도 추이를 확인하고, 권역 완결응급의료 정책을 함께 살펴봅니다.</p>
       <p class="authors">전남대병원 극최종치료 거점, 목포·순천 80% 의도적 완결 거점, 전남 초기 최소안정화 damage-control node를 연결하는 계층형 광역 응급의료체계 재설계</p>
       <div class="affiliation">자료 기준: 내 손안의 응급실 공개 간편조회 API, 2024 응급의료기관 평가 결과 병합, 행정안전부 주민등록 인구통계</div>
+      <div class="data-advisory" role="note" aria-label="병상 정보 이용 안내">
+        <strong>⚠ 참고용 안내</strong>
+        본 서비스는 광주·전남 응급실 병상 현황의 추세 관찰을 위한 참고용입니다. 데이터는 약 30분 주기로 갱신되므로 현재 시점의 실제 가용 병상 및 수용 가능 여부와 차이가 있을 수 있습니다. 응급환자 이송·내원 전에는 <a href="https://mediboard.nemc.or.kr/" target="_blank" rel="noopener noreferrer">내 손안의 응급실에서 최신 정보 확인</a> 후, 119 또는 해당 의료기관을 통해 실제 수용 가능 여부를 반드시 확인해 주세요.
+      </div>
     </header>
 
     <div class="content">
@@ -689,7 +712,7 @@ a {
           </div>
           <div class="summary-row">
             <strong>Evidence Base</strong>
-            <p>내 손안의 응급실 공개 간편조회 API를 통해 광주와 전남 응급의료기관 현황, 실시간 일반·소아 응급실 병상, 메시지 현황을 수집하고, 보건복지부 2024 응급의료기관 평가등급을 병합했다. 이를 바탕으로 광주 중심 집중화 모델이 아니라 광주·목포·순천 3대 거점과 주변 damage-control node를 연결하는 이송·전원 네트워크 모델을 제안했다.</p>
+            <p>내 손안의 응급실 공개 간편조회 API를 통해 광주와 전남 응급의료기관 현황, 반복 수집한 일반·소아 응급실 병상, 메시지 현황을 수집하고, 보건복지부 2024 응급의료기관 평가등급을 병합했다. 이를 바탕으로 광주 중심 집중화 모델이 아니라 광주·목포·순천 3대 거점과 주변 damage-control node를 연결하는 이송·전원 네트워크 모델을 제안했다.</p>
           </div>
           <div class="summary-row">
             <strong>Key Findings</strong>
@@ -709,10 +732,10 @@ a {
         </div>
 
         <section class="figure">
-          <div class="figure-head"><strong>Figure 1: 광주응급실·전남응급실 실시간 병상 현황 지도</strong></div>
+          <div class="figure-head"><strong>Figure 1: 광주응급실·전남응급실 최근 수집 병상 현황 지도</strong></div>
           <a class="map-open-link" href="gwangju_emergency_map.html?v=20260806223155">광주·전남 응급실 병상 정보 전체 화면으로 보기</a>
-          <iframe class="map-frame" src="gwangju_emergency_map.html?v=20260806223155" title="광주응급실·전남응급실 실시간 병상 현황 지도" allow="geolocation"></iframe>
-          <div class="caption">원 크기는 기관 유형을, 색상은 2024 응급의료기관 평가등급을 나타낸다. 표의 병상 수는 현재 시점의 남은 병상/전체 병상이며, 병상 포화도는 (전체 병상-남은 병상)/전체 병상으로 계산한 실시간 값이다. 3개월 또는 1년 평균 병상포화지수와는 구분해야 한다. 지도 하단의 전국 패널은 일반 응급실 병상 포화도 80% 이상인 기관만 전국 단위로 별도 집계한 것이며, 광주·전남 소재 기관은 적색으로 구분해 표시한다. 기관별 일자별 추이 그래프는 하루 동안 수집된 평균 포화도와 같은 날짜의 최저·최고 관측값을 함께 표시한다.</div>
+          <iframe class="map-frame" src="gwangju_emergency_map.html?v=20260806223155" title="광주응급실·전남응급실 최근 수집 병상 현황 지도" allow="geolocation"></iframe>
+          <div class="caption">원 크기는 기관 유형을, 색상은 2024 응급의료기관 평가등급을 나타낸다. 표의 병상 수는 마지막 수집 시점의 남은 병상/전체 병상이며, 병상 포화도는 (전체 병상-남은 병상)/전체 병상으로 계산한 최근 수집 값이다. 실제 가용 병상과 수용 가능 여부는 달라질 수 있으며, 3개월 또는 1년 평균 병상포화지수와도 구분해야 한다. 지도 하단의 전국 패널은 일반 응급실 병상 포화도 80% 이상인 기관만 전국 단위로 별도 집계한 것이며, 광주·전남 소재 기관은 적색으로 구분해 표시한다. 기관별 일자별 추이 그래프는 하루 동안 수집된 평균 포화도와 같은 날짜의 최저·최고 관측값을 함께 표시한다.</div>
         </section>
 
         <h2>Background</h2>

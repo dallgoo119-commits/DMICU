@@ -199,6 +199,38 @@ class DisplaySummaryTests(unittest.TestCase):
         self.assertEqual(result["general_saturation"], 76.7)
 
 
+class StaticSafetyCopyTests(unittest.TestCase):
+    def test_automatic_refresh_preserves_delayed_data_warning_copy(self):
+        source = updater.MAP_HTML.read_text(encoding="utf-8")
+        stats = {
+            "total": 2,
+            "gwangju": 1,
+            "jeonnam": 1,
+            "general_available": 3,
+            "general_overflow": 0,
+            "general_total": 10,
+            "general_saturation": 70.0,
+            "child_available": 1,
+            "child_overflow": 0,
+            "child_total": 2,
+            "child_saturation": 50.0,
+            "grades": {"A": 1, "B": 1, "C": 0, "-": 0},
+        }
+
+        updated = updater.update_static_text(
+            source,
+            "2026-08-07T00:30:00+09:00",
+            stats,
+        )
+
+        self.assertIn("마지막 수집 2026-08-07T00:30:00+09:00", updated)
+        self.assertIn("약 30분 주기로 갱신되는 병상 현황", updated)
+        self.assertIn("최근 수집 포화 70.0%", updated)
+        self.assertIn("참고용 안내", updated)
+        self.assertIn("실제 수용 가능 여부를 반드시 확인", updated)
+        self.assertNotIn("실시간 포화", updated)
+
+
 class ResearchArchiveTests(unittest.TestCase):
     def test_complete_snapshot_is_compact_and_idempotent_by_capture_time(self):
         rows = [

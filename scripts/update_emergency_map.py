@@ -792,21 +792,21 @@ def summary(rows):
 
 def update_static_text(source, captured_at, stats):
     source = re.sub(
-        r"지도 생성 [0-9T:\-+.Z]+",
-        f"지도 생성 {captured_at}",
+        r"(?:지도 생성|마지막 수집) [0-9T:\-+.Z]+",
+        f"마지막 수집 {captured_at}",
         source,
         count=1,
     )
     source = re.sub(
         r"병원별 추이 버튼을 누르면 .*?확인할 수 있습니다\.",
-        "병원별 추이 버튼을 누르면 30분 주기로 갱신되는 최신 병상 현황과 저장된 일자별 포화도 그래프를 확인할 수 있습니다.",
+        "병원별 추이 버튼을 누르면 약 30분 주기로 갱신되는 병상 현황과 저장된 일자별 포화도 그래프를 확인할 수 있습니다.",
         source,
         count=1,
     )
     # 과거 버전이 매 실행마다 동일 문구를 중복 삽입하던 버그가 있어, 반복을 1회로 정규화한다(멱등)
     source = re.sub(
         r"(?:(?:2시간마다|외부 cron으로 주기) 갱신되는 최신 병상 현황과 )+",
-        "30분 주기로 갱신되는 최신 병상 현황과 ",
+        "약 30분 주기로 갱신되는 병상 현황과 ",
         source,
         count=1,
     )
@@ -817,8 +817,8 @@ def update_static_text(source, captured_at, stats):
         count=1,
     )
     source = re.sub(
-        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>일반 응급실 (?:남은 병상|비음수 빈 병상 합)/전체 병상<br>실시간 포화 [^<]+</span></div>',
-        f'<div class="card"><strong>남은 {stats["general_available"]} / 전체 {stats["general_total"]}</strong><span>일반 응급실 비음수 빈 병상 합/전체 병상<br>실시간 포화 {stats["general_saturation"]}%'
+        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>일반 응급실 (?:남은 병상|비음수 빈 병상 합)/전체 병상<br>(?:실시간|최근 수집) 포화 [^<]+</span></div>',
+        f'<div class="card"><strong>남은 {stats["general_available"]} / 전체 {stats["general_total"]}</strong><span>일반 응급실 비음수 빈 병상 합/전체 병상<br>최근 수집 포화 {stats["general_saturation"]}%'
         + (
             f' · 초과 보고 {stats["general_overflow"]}병상'
             if stats["general_overflow"]
@@ -829,8 +829,8 @@ def update_static_text(source, captured_at, stats):
         count=1,
     )
     source = re.sub(
-        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>소아 응급실 (?:남은 병상|비음수 빈 병상 합)/전체 병상<br>실시간 포화 [^<]+</span></div>',
-        f'<div class="card"><strong>남은 {stats["child_available"]} / 전체 {stats["child_total"]}</strong><span>소아 응급실 비음수 빈 병상 합/전체 병상<br>실시간 포화 {stats["child_saturation"]}%'
+        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>소아 응급실 (?:남은 병상|비음수 빈 병상 합)/전체 병상<br>(?:실시간|최근 수집) 포화 [^<]+</span></div>',
+        f'<div class="card"><strong>남은 {stats["child_available"]} / 전체 {stats["child_total"]}</strong><span>소아 응급실 비음수 빈 병상 합/전체 병상<br>최근 수집 포화 {stats["child_saturation"]}%'
         + (
             f' · 초과 보고 {stats["child_overflow"]}병상'
             if stats["child_overflow"]

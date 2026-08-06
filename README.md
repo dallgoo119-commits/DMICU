@@ -9,7 +9,7 @@ GitHub Pages가 활성화되면 아래 주소에서 열람할 수 있습니다.
 ## Files
 
 - `index.html`: 전략 보고서 본문
-- `gwangju_emergency_map.html`: 보고서에 포함된 광주·전남 응급의료기관 실시간 병상 지도
+- `gwangju_emergency_map.html`: 약 30분 주기로 수집한 광주·전남 응급의료기관 병상 현황 참고 지도
 - `visitor-stats.json`: 공람 페이지 접속 통계 표시용 JSON 자리
 - `ems_anonymous_feedback_template.md`: 광주·전남 구급대원 무기명 현장 제보 설문 문항 템플릿
 - `.github/workflows/update-beds.yml`: 외부 cron 또는 수동 실행으로 병상 현황을 다시 수집해 지도 HTML을 자동 커밋
