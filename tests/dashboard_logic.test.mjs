@@ -30,6 +30,11 @@ test("every inline dashboard script parses", () => {
 });
 
 const helperNames = new Set([
+  "pairSaturation",
+  "validCoordinates",
+  "currentNationalRows",
+  "isStale",
+  "flexibility",
   "bedText",
   "satText",
   "isIsoDate",
@@ -157,4 +162,29 @@ test("missing and negative availability are displayed without overclaiming", () 
     vm.runInContext("satText(120)", context),
     "포화 120% · 초과 보고",
   );
+});
+
+test("invalid pairs and zero totals are distinct from missing values", () => {
+  assert.equal(vm.runInContext("bedText(0,0)", context), "전체 0 · 산정 불가");
+  assert.equal(vm.runInContext("bedText(12,10)", context), "값 확인 필요");
+  assert.equal(vm.runInContext("bedText(null,10,'invalid')", context), "값 확인 필요");
+  for (const expression of ["pairSaturation(12,10)","pairSaturation(0,0)","pairSaturation(1.5,10)"]) assert.equal(vm.runInContext(expression,context),null);
+  assert.equal(vm.runInContext("pairSaturation(-2,10)",context),120);
+});
+
+test("freshness flags delayed, missing and future capture times", () => {
+  const now = Date.parse('2026-09-10T12:00:00Z');
+  assert.equal(vm.runInContext(`isStale('2026-09-10T11:45:00Z',${now})`,context),false);
+  assert.equal(vm.runInContext(`isStale('2026-09-10T10:00:00Z',${now})`,context),true);
+  assert.equal(vm.runInContext(`isStale('2026-09-10T13:00:00Z',${now})`,context),true);
+  assert.equal(vm.runInContext(`isStale(null,${now})`,context),true);
+});
+
+test("nearby uses current snapshot, correct pair, and newer local values", () => {
+  vm.runInContext(`const NATIONAL_CURRENT=[{c:'A1',a:2,o:10,s:80,lat:35,lon:127},{c:'A2',a:4,o:10,s:60,lat:35,lon:127}];const DATA=[{code:'A1',general_available:7,general_total:10,lat:35,lon:127}];const NATMETA=[{captured:'2026-09-10T12:00:00Z'}];const LOCALMETA=[{captured:'2026-09-10T12:30:00Z'}];const NATIONAL_HISTORY=[{code:'removed',saturation:20,lat:35,lon:127},{code:'A2',saturation:12,available:4,total:10}];`,context);
+  const rows=JSON.parse(vm.runInContext('JSON.stringify(currentNationalRows())',context));
+  assert.equal(rows.length,2);
+  assert.equal(rows.find(r=>r.code==='A1').saturation,30);
+  assert.equal(rows.find(r=>r.code==='A2').saturation,60);
+  assert.ok(!rows.some(r=>r.code==='removed'));
 });
