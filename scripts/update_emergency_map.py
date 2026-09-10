@@ -1,4 +1,5 @@
 import json
+import math
 import re
 import time
 import urllib.request
@@ -9,6 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MAP_HTML = ROOT / "gwangju_emergency_map.html"
 INDEX_HTML = ROOT / "index.html"
+POLICY_HTML = ROOT / "policy.html"
+TREND_DIR = ROOT / "data" / "trends"
 NATIONAL_RESEARCH_DIR = ROOT / "data" / "national_daily"
 NATIONAL_SNAPSHOT_DIR = ROOT / "data" / "national_snapshots"
 KST = timezone(timedelta(hours=9))
@@ -122,8 +125,8 @@ def fetch_national(items_by_code, failed_labels):
                 "o": beds_total,
                 "s": saturation,
                 "m": len(collect_messages(item)),
-                "lat": float(lat) if lat is not None else None,
-                "lon": float(lon) if lon is not None else None,
+                "lat": coordinate(lat, 90),
+                "lon": coordinate(lon, 180),
                 "addr": pick(item, "address", "dutyAddr", "addr") or "",
             }
             key = emog or f'{region}|{row["n"]}'
@@ -300,7 +303,10 @@ def replace_array(source, name, value):
         elif char == "]":
             depth -= 1
             if depth == 0:
-                encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+                # JSON is embedded in a script element: even a hospital notice can
+                # contain a closing script tag. Escape HTML delimiters, not the data.
+                encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+                encoded = encoded.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
                 return source[:start] + encoded + source[index + 1 :]
     raise ValueError(f"Could not replace {name}")
 
@@ -330,18 +336,72 @@ def pick(row, *keys):
 
 
 def number(value):
-    if value in (None, "", "-"):
+    if value in (None, "", "-") or isinstance(value, bool):
         return None
     try:
-        return int(float(str(value).strip()))
-    except ValueError:
+        parsed = float(str(value).strip())
+        return int(parsed) if math.isfinite(parsed) and parsed.is_integer() and abs(parsed) <= 9007199254740991 else None
+    except (ValueError, OverflowError):
         return None
 
 
 def percent(available, total):
-    if total and available is not None:
-        return round((total - available) / total * 100, 1)
-    return None
+    available, total = number(available), number(total)
+    if total is None or total <= 0 or available is None or available > total:
+        return None
+    # Negative availability is retained as an above-100% source report, not
+    # silently clamped or asserted to be a confirmed input error.
+    # Match the browser's Math.round: one decimal, half-up for nonnegative ratios.
+    return math.floor((total - available) / total * 1000 + 0.5) / 10
+
+
+def coordinate(value, limit):
+    try:
+        parsed = float(value)
+        return parsed if math.isfinite(parsed) and -limit <= parsed <= limit else None
+    except (ValueError, TypeError):
+        return None
+
+
+def bed_quality(available, total):
+    if available in (None, "", "-") or total in (None, "", "-"):
+        return "missing"
+    a, t = number(available), number(total)
+    if a is None or t is None or t < 0 or a > t:
+        return "invalid"
+    if t == 0:
+        return "zero_total"
+    return "overflow_report" if a < 0 else "reported"
+
+
+def load_history(source, name):
+    """Read per-institution histories; accept embedded arrays during migration."""
+    embedded = extract_array(source, name)
+    if embedded:
+        return embedded
+    folder = TREND_DIR / ("local" if name == "HISTORY" else "national")
+    records = []
+    for path in sorted(folder.glob("*.json")):
+        records.extend(json.loads(path.read_text(encoding="utf-8")))
+    return records
+
+
+def write_history(name, history):
+    """Small trend files are fetched only when that hospital is selected."""
+    from urllib.parse import quote
+    folder = TREND_DIR / ("local" if name == "HISTORY" else "national")
+    folder.mkdir(parents=True, exist_ok=True)
+    grouped = {}
+    for row in history:
+        grouped.setdefault(row["code"], []).append(row)
+    for code, records in grouped.items():
+        path = folder / f"{quote(str(code), safe='')}.json"
+        encoded = json.dumps(records, ensure_ascii=False, separators=(",", ":"), allow_nan=False) + "\n"
+        if path.exists() and path.read_text(encoding="utf-8") == encoded:
+            continue
+        temporary = path.with_suffix(".json.tmp")
+        temporary.write_text(encoded, encoding="utf-8", newline="\n")
+        temporary.replace(path)
 
 
 def class_code(type_name):
@@ -382,7 +442,7 @@ def fetch_rows(previous_by_code, items):
     if not items:
         # 광주·전남 데이터가 없으면 기존 지도를 지우지 않도록 실패 처리한다
         raise RuntimeError("전남광주(bjdcd1=12) 수집 실패; 지도 갱신을 중단합니다")
-    rows = []
+    rows_by_code = {}
     for item in items:
         code = pick(item, "emogCode", "hpid", "dutyId")
         if not code:
@@ -390,9 +450,6 @@ def fetch_rows(previous_by_code, items):
         previous = previous_by_code.get(code, {})
         lat = pick(item, "latitude", "lat", "wgs84Lat") or previous.get("lat")
         lon = pick(item, "longitude", "lon", "lng", "wgs84Lon") or previous.get("lon")
-        if lat is None or lon is None:
-            # 좌표가 없는 신규 기관은 지도에 표기할 수 없으므로 건너뛴다
-            continue
         general_available = number(pick(item, "generalEmergencyAvailable"))
         general_total = number(pick(item, "generalEmergencyTotal"))
         child_available = number(pick(item, "childEmergencyAvailable"))
@@ -410,14 +467,17 @@ def fetch_rows(previous_by_code, items):
             or "",
             "type": type_name,
             "grade": GRADE_BY_CODE.get(code, previous.get("grade", "-")),
-            "lat": float(lat),
-            "lon": float(lon),
+            "lat": coordinate(lat, 90),
+            "lon": coordinate(lon, 180),
             "general_available": general_available,
             "general_total": general_total,
             "general_saturation": percent(general_available, general_total),
+            "general_status": bed_quality(pick(item, "generalEmergencyAvailable"), pick(item, "generalEmergencyTotal")),
             "child_available": child_available,
             "child_total": child_total,
             "child_saturation": percent(child_available, child_total),
+            "child_status": bed_quality(pick(item, "childEmergencyAvailable"), pick(item, "childEmergencyTotal")),
+            "source_beds": {key: item.get(key) for key in ("generalEmergencyAvailable", "generalEmergencyTotal", "childEmergencyAvailable", "childEmergencyTotal")},
             "message_count": len(collect_messages(item)),
             "address": pick(item, "address", "dutyAddr", "addr")
             or previous.get("address")
@@ -425,8 +485,11 @@ def fetch_rows(previous_by_code, items):
             "messages": collect_messages(item),
             "classCode": class_code(type_name),
         }
-        rows.append(row)
+        if code in rows_by_code and rows_by_code[code] != row:
+            raise RuntimeError(f"Conflicting local institution records: {code}")
+        rows_by_code[code] = row
 
+    rows = list(rows_by_code.values())
     if not rows:
         # API가 빈 결과를 주면 기존 지도 데이터를 지우지 않도록 실패 처리한다
         raise RuntimeError("NEMC handy API returned no rows; aborting update")
@@ -523,6 +586,8 @@ def update_history(history, rows, captured_at):
     for row in rows:
         key = (today, row["code"])
         existing = by_key.get(key)
+        if existing and existing.get("last_sample_at") == captured_at:
+            continue
         if existing and existing.get("schema_version", 1) < HISTORY_SCHEMA_VERSION:
             # Do not merge a legacy UTC-day accumulator into the first KST day.
             existing = None
@@ -574,6 +639,8 @@ def update_national_history(history, rows, captured_at):
         code = row.get("c") or f'{row["r"]}|{row["n"]}'
         key = (today, code)
         existing = by_key.get(key)
+        if existing and existing.get("last_sample_at") == captured_at:
+            continue
         if existing and existing.get("schema_version", 1) < HISTORY_SCHEMA_VERSION:
             existing = None
         if existing is None:
@@ -759,7 +826,7 @@ def archive_national_snapshot(rows, captured_at, quality):
 
 def summary(rows):
     def known(kind):
-        return [row for row in rows if row[f"{kind}_available"] is not None and row[f"{kind}_total"]]
+        return [row for row in rows if percent(row[f"{kind}_available"], row[f"{kind}_total"]) is not None]
 
     general = known("general")
     child = known("child")
@@ -783,6 +850,8 @@ def summary(rows):
         "child_overflow": child_overflow,
         "child_total": child_total,
         "child_saturation": percent(child_reported_available, child_total),
+        "general_included": len(general),
+        "child_included": len(child),
         "grades": {
             grade: sum(1 for row in rows if row["grade"] == grade)
             for grade in ("A", "B", "C", "-")
@@ -791,6 +860,10 @@ def summary(rows):
 
 
 def update_static_text(source, captured_at, stats):
+    stats = dict(stats)
+    for field in ("general_saturation", "child_saturation"):
+        if stats[field] is None:
+            stats[field] = "산정 불가"
     source = re.sub(
         r"(?:지도 생성|마지막 수집) [0-9T:\-+.Z]+",
         f"마지막 수집 {captured_at}",
@@ -846,25 +919,26 @@ def update_static_text(source, captured_at, stats):
         source,
         count=1,
     )
-    return source
+    return source.replace("산정 불가%", "산정 불가")
 
 
 def update_index_cache_buster(captured_at):
-    source = INDEX_HTML.read_text(encoding="utf-8")
     version = re.sub(r"[^0-9]", "", captured_at)[:14]
-    updated = re.sub(
-        r'(src|href)="gwangju_emergency_map\.html(?:\?v=[^"]*)?"',
-        rf'\1="gwangju_emergency_map.html?v={version}"',
-        source,
-    )
-    INDEX_HTML.write_text(updated, encoding="utf-8", newline="\n")
+    for path in (INDEX_HTML, POLICY_HTML):
+        if path.exists():
+            source = path.read_text(encoding="utf-8")
+            updated = re.sub(
+                r'(src|href)="gwangju_emergency_map\.html(?:\?v=[^"]*)?"',
+                rf'\1="gwangju_emergency_map.html?v={version}"', source,
+            )
+            path.write_text(updated, encoding="utf-8", newline="\n")
 
 
 def main():
     source = MAP_HTML.read_text(encoding="utf-8")
     previous_data = extract_array(source, "DATA")
-    history = extract_array(source, "HISTORY")
-    national_history = extract_array(source, "NATIONAL_HISTORY")
+    history = load_history(source, "HISTORY")
+    national_history = load_history(source, "NATIONAL_HISTORY")
     national_meta = extract_array(source, "NATMETA")
     previous_by_code = {row["code"]: row for row in previous_data}
     items_by_code, failed_labels = fetch_all_regions()
@@ -878,19 +952,26 @@ def main():
         nat_quality,
     ) = fetch_national(items_by_code, failed_labels)
     captured_at = capture_timestamp()
+    for row in rows:
+        row["captured_at"] = captured_at
     history = update_history(history, rows, captured_at)
     stats = summary(rows)
     source = replace_array(source, "DATA", rows)
-    source = replace_array(source, "HISTORY", history)
+    write_history("HISTORY", history)
+    source = replace_array(source, "HISTORY", [])
+    source = replace_array(source, "LOCALMETA", [{"captured": captured_at, "source_updated_at": None, **stats}])
     national_complete = (
         successful_region_count == len(NATIONAL_CODES) and not nat_failed
+        and nat_quality["conflicting_duplicate_count"] == 0
     )
     daily_archive_path = None
     snapshot_archive_path = None
     if national_complete:
         national_history = update_national_history(national_history, nat_history_rows, captured_at)
         source = replace_array(source, "NATIONAL", nat_rows)
-        source = replace_array(source, "NATIONAL_HISTORY", national_history)
+        write_history("NATIONAL_HISTORY", national_history)
+        source = replace_array(source, "NATIONAL_HISTORY", [])
+        source = replace_array(source, "NATIONAL_CURRENT", nat_history_rows)
         source = replace_array(
             source,
             "NATMETA",

@@ -8,7 +8,11 @@ GitHub Pages가 활성화되면 아래 주소에서 열람할 수 있습니다.
 
 ## Files
 
-- `index.html`: 전략 보고서 본문
+- `index.html`: 병상 현황 중심 첫 화면 (기존 `#part-1`, `#part-2` 링크 보존)
+- `policy.html`: 전략 보고서와 공개 의견 (목표·가정·검증 대기 수치 구분)
+- `methodology.html`: 데이터 시각, 결측값, 포화도 산식과 해석 한계
+- `assets/`: 화면 스타일과 기관별 추이 지연 로딩
+- `data/trends/local/*.json`, `data/trends/national/*.json`: 기관별 과거 관측 이력. 선택한 기관 파일만 브라우저에서 요청
 - `gwangju_emergency_map.html`: 약 30분 주기로 수집한 광주·전남 응급의료기관 병상 현황 참고 지도
 - `visitor-stats.json`: 공람 페이지 접속 통계 표시용 JSON 자리
 - `ems_anonymous_feedback_template.md`: 광주·전남 구급대원 무기명 현장 제보 설문 문항 템플릿
@@ -58,7 +62,7 @@ cron-job.org에서 새 작업을 만들고 다음 값으로 설정합니다.
 
 ## Public Comments
 
-댓글은 GitHub Issues 기반의 utterances를 사용합니다.
+정책 페이지는 기존 Supabase 공개 의견과 GitHub Issues 기반 utterances를 유지합니다. 댓글 HTML은 텍스트로 표시합니다. 브라우저의 개인정보 패턴 안내는 보조 장치이며 서버 권한·도배 방지·신고 처리를 대체하지 않습니다. 로컬 미리보기에서는 댓글 전송과 방문 기록을 수행하지 않습니다.
 
 1. https://github.com/apps/utterances 에서 앱을 설치합니다.
 2. 설치 대상 저장소로 `dallgoo119-commits/DMICU`를 선택합니다.
@@ -66,7 +70,7 @@ cron-job.org에서 새 작업을 만들고 다음 값으로 설정합니다.
 
 ## Visitor Stats
 
-GitHub Pages는 정적 호스팅이므로 자체적으로 실시간 접속자 수를 저장할 수 없습니다. `index.html`은 기본적으로 `visitor-stats.json`을 읽어 다음 형식의 값을 표시합니다.
+GitHub Pages는 정적 호스팅이므로 방문 통계는 `policy.html`의 Supabase RPC 응답으로 표시합니다. 고정 가산값은 사용하지 않으며, 응답의 누락·음수·비정수 값은 오류로 처리합니다. `visitor-stats.json`은 기존 참고 파일로 남아 있습니다.
 
 ```json
 {
@@ -77,7 +81,7 @@ GitHub Pages는 정적 호스팅이므로 자체적으로 실시간 접속자 �
 }
 ```
 
-실시간 집계가 필요하면 Cloudflare Worker, Firebase, GoatCounter 등 별도 통계 엔드포인트를 만들고 `window.DMICU_VISITOR_STATS_ENDPOINT`로 연결하면 됩니다.
+실패 시 방문자 수를 임의의 0으로 바꾸지 않고 오류 상태를 표시합니다. 운영 DB 권한과 RPC 구성은 `supabase_visitor_stats.sql`을 참고하세요.
 
 ## Anonymous EMS Feedback
 
@@ -88,4 +92,18 @@ GitHub Pages는 정적 호스팅이므로 자체적으로 실시간 접속자 �
 - 구 단위 또는 권역 단위, 시간대, 질환군, 미수용 사유, 지연 시간, 개선 제안을 중심으로 묻습니다.
 - 원자료는 비공개로 보관하고, 공개 보고서에는 익명화·집계된 내용만 반영합니다.
 
-`ems_anonymous_feedback_template.md`의 문항을 Google Forms, Tally, Typeform 등에 옮긴 뒤, 생성된 설문 URL을 `window.DMICU_EMS_FEEDBACK_FORM_URL`에 연결하면 공람 페이지의 버튼이 활성화됩니다.
+`ems_anonymous_feedback_template.md`는 별도 무기명 설문을 설계할 때 참고할 수 있습니다.
+
+## Validation and local preview
+
+```sh
+python -m unittest discover -s tests -p "test_*.py"
+node --test tests/*.test.mjs
+python -m http.server 8765 --bind 127.0.0.1
+```
+
+`http://127.0.0.1:8765/`에서 미리 볼 수 있습니다. 수집기를 실행하면 실제 공개 API 관측을 새로 기록하므로 화면 수정만 확인할 때는 실행할 필요가 없습니다.
+
+이력 분리 이전 HTML을 가져올 때만 `python scripts/migrate_dashboard_history.py`를 실행합니다. 수집 시각과 관측값을 변경하지 않고 JSON 이력을 기관별로 분리하며, 이후 수집기는 이 파일들을 읽고 갱신합니다. 배포 시 `data/trends/`와 `assets/`를 함께 포함해야 합니다.
+
+병상 값은 유한 정수만 허용하고, 분모 0·음수 전체·전체보다 많은 가용 병상은 계산에서 제외합니다. 음수 가용 병상은 100% 초과 보고로 유지합니다. 지역 중복 값 충돌은 수집을 중단하고, 전국 충돌은 이전 완전본을 유지합니다. 기존 관측 이력은 재작성하거나 추정값으로 보정하지 않습니다.
