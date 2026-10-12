@@ -65,6 +65,7 @@ const helperNames = new Set([
   "nationalValidDailyRecord",
   "nationalAnalysisValue",
   "nationalCompletedKstValue",
+  "nearbyCountText",
 ]);
 
 const dashboardScript = inlineScripts.at(-1);
@@ -276,4 +277,16 @@ test("historical outlier days cannot distort statistics or chart axes", () => {
   );
   assert.match(html, /y:\{min:0,max:100/);
   assert.doesNotMatch(html, /suggestedMax:100/);
+});
+
+test("nearby result count explains the 18-item display cap", () => {
+  assert.equal(
+    vm.runInContext("nearbyCountText(33, 50)", context),
+    "33곳 중 가까운 18곳 표시 · 반경 50km",
+  );
+  assert.equal(
+    vm.runInContext("nearbyCountText(15, 10)", context),
+    "15곳 · 반경 10km",
+  );
+  assert.equal(vm.runInContext("nearbyCountText(0, 10)", context), "0곳");
 });
