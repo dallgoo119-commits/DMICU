@@ -37,6 +37,10 @@ const helperNames = new Set([
   "bedText",
   "satText",
   "overallSat",
+  "hasInvalidBedReport",
+  "statusAvailabilityText",
+  "satLevel",
+  "statusPill",
   "isIsoDate",
   "addIsoDays",
   "isoRange",
@@ -190,6 +194,22 @@ test("invalid upstream bed values stay visible but are excluded from saturation"
   assert.equal(vm.runInContext("bedText(0, 0)", context), "운영 병상 없음");
   assert.equal(vm.runInContext("validSat(100)", context), true);
   assert.equal(vm.runInContext("validSat(100.1)", context), false);
+  context.invalidStatusRow = {
+    general_available: -2,
+    general_total: 10,
+    general_saturation: null,
+    child_available: 3,
+    child_total: 4,
+    child_saturation: 25,
+  };
+  assert.equal(
+    vm.runInContext("statusAvailabilityText(invalidStatusRow)", context),
+    "원천값 확인",
+  );
+  assert.match(
+    vm.runInContext("statusPill(invalidStatusRow)", context),
+    /status-gray[\s\S]*원천값 확인/,
+  );
 });
 
 test("every current invalid report renders as a quality warning, never a percentage", () => {
