@@ -12,9 +12,9 @@ INDEX_HTML = ROOT / "index.html"
 NATIONAL_RESEARCH_DIR = ROOT / "data" / "national_daily"
 NATIONAL_SNAPSHOT_DIR = ROOT / "data" / "national_snapshots"
 KST = timezone(timedelta(hours=9))
-HISTORY_SCHEMA_VERSION = 2
+HISTORY_SCHEMA_VERSION = 3
 HISTORY_DATE_BASIS = "Asia/Seoul"
-HISTORY_AGGREGATION = "successful_snapshot_mean"
+HISTORY_AGGREGATION = "valid_successful_snapshot_mean"
 
 
 def parse_timestamp(value):
@@ -86,6 +86,7 @@ def fetch_national(items_by_code, failed_labels):
     unique_rows = {}
     raw_item_count = 0
     invalid_count = 0
+    invalid_bed_value_count = 0
     duplicate_count = 0
     conflicting_codes = set()
     for code, items in items_by_code.items():
@@ -98,9 +99,9 @@ def fetch_national(items_by_code, failed_labels):
                 invalid_count += 1
                 continue
             saturation = percent(available, beds_total)
-            if saturation is None:
-                invalid_count += 1
-                continue
+            invalid_value = saturation is None
+            if invalid_value:
+                invalid_bed_value_count += 1
             emog = str(pick(item, "emogCode", "hpid", "dutyId") or "")
             if emog.startswith("A15"):
                 region = "광주"
@@ -121,6 +122,7 @@ def fetch_national(items_by_code, failed_labels):
                 "a": available,
                 "o": beds_total,
                 "s": saturation,
+                "q": "invalid_availability" if invalid_value else None,
                 "m": len(collect_messages(item)),
                 "lat": float(lat) if lat is not None else None,
                 "lon": float(lon) if lon is not None else None,
@@ -130,7 +132,9 @@ def fetch_national(items_by_code, failed_labels):
             previous = unique_rows.get(key)
             if previous is not None:
                 duplicate_count += 1
-                material_fields = ("r", "n", "t", "a", "o", "s", "m", "lat", "lon", "addr")
+                material_fields = (
+                    "r", "n", "t", "a", "o", "s", "q", "m", "lat", "lon", "addr"
+                )
                 if any(previous.get(field) != row.get(field) for field in material_fields):
                     conflicting_codes.add(key)
                 # Keep the more complete record. Ties keep the first region response
@@ -145,14 +149,28 @@ def fetch_national(items_by_code, failed_labels):
                 unique_rows[key] = row
 
     history_rows = list(unique_rows.values())
-    rows = [row for row in history_rows if row["s"] >= NATIONAL_THRESHOLD]
-    rows.sort(key=lambda x: (-x["s"], x["r"], x["n"]))
+    # Keep invalid raw reports visible as a separate quality warning, but never
+    # rank them as if they were valid >100% occupancy values.
+    rows = [
+        row
+        for row in history_rows
+        if row["s"] is None or row["s"] >= NATIONAL_THRESHOLD
+    ]
+    rows.sort(
+        key=lambda x: (
+            x["s"] is None,
+            -(x["s"] if x["s"] is not None else -1),
+            x["r"],
+            x["n"],
+        )
+    )
     quality = {
         "raw_item_count": raw_item_count,
         "unique_institution_count": len(history_rows),
         "duplicate_count": duplicate_count,
         "conflicting_duplicate_count": len(conflicting_codes),
         "invalid_count": invalid_count,
+        "invalid_bed_value_count": invalid_bed_value_count,
     }
     return (
         rows,
@@ -338,10 +356,44 @@ def number(value):
         return None
 
 
+def valid_bed_value(available, total):
+    """Return whether a reported empty-bed value can be used as a percentage.
+
+    The upstream API occasionally reports negative empty beds or more empty beds
+    than the stated total. Those raw values remain visible for audit, but they
+    are not mathematically valid occupancy inputs.
+    """
+    return (
+        available is not None
+        and total is not None
+        and total > 0
+        and 0 <= available <= total
+    )
+
+
+def inactive_bed_value(available, total):
+    """Return whether the source explicitly reports no operating bed capacity."""
+    return total == 0 and available in (None, 0)
+
+
+def invalid_bed_value(available, total):
+    """Return whether present upstream values must be excluded from statistics."""
+    return (
+        available is not None
+        and total is not None
+        and not inactive_bed_value(available, total)
+        and not valid_bed_value(available, total)
+    )
+
+
 def percent(available, total):
-    if total and available is not None:
+    if valid_bed_value(available, total):
         return round((total - available) / total * 100, 1)
     return None
+
+
+def valid_saturation_value(value):
+    return isinstance(value, (int, float)) and 0 <= value <= 100
 
 
 def class_code(type_name):
@@ -442,7 +494,7 @@ def rounded(value):
     return None if value is None else round(value, 1)
 
 
-def merge_saturation(existing, prefix, value):
+def merge_saturation(existing, prefix, value, invalid=False):
     """Accumulate one day's samples while keeping the public field as daily average."""
     count_key = f"{prefix}_sample_count"
     sum_key = f"{prefix}_saturation_sum"
@@ -450,6 +502,12 @@ def merge_saturation(existing, prefix, value):
     min_key = f"{prefix}_saturation_min"
     max_key = f"{prefix}_saturation_max"
     public_key = f"{prefix}_saturation"
+    invalid_key = f"{prefix}_invalid_sample_count"
+    if value is not None and not valid_saturation_value(value):
+        invalid = True
+    if invalid:
+        existing[invalid_key] = existing.get(invalid_key, 0) + 1
+        return
     if value is None:
         return
     old_count = existing.get(count_key)
@@ -477,7 +535,12 @@ def merge_saturation(existing, prefix, value):
     existing[public_key] = existing[avg_key]
 
 
-def merge_national_saturation(existing, value):
+def merge_national_saturation(existing, value, invalid=False):
+    if value is not None and not valid_saturation_value(value):
+        invalid = True
+    if invalid:
+        existing["invalid_sample_count"] = existing.get("invalid_sample_count", 0) + 1
+        return
     if value is None:
         return
     old_count = existing.get("sample_count")
@@ -553,8 +616,20 @@ def update_history(history, rows, captured_at):
                 "last_sample_at": captured_at,
             }
         )
-        merge_saturation(existing, "general", row["general_saturation"])
-        merge_saturation(existing, "child", row["child_saturation"])
+        merge_saturation(
+            existing,
+            "general",
+            row["general_saturation"],
+            invalid=invalid_bed_value(
+                row["general_available"], row["general_total"]
+            ),
+        )
+        merge_saturation(
+            existing,
+            "child",
+            row["child_saturation"],
+            invalid=invalid_bed_value(row["child_available"], row["child_total"]),
+        )
         by_key[key] = existing
     return [by_key[key] for key in sorted(by_key)]
 
@@ -603,7 +678,14 @@ def update_national_history(history, rows, captured_at):
                 "last_sample_at": captured_at,
             }
         )
-        merge_national_saturation(existing, row["s"])
+        merge_national_saturation(
+            existing,
+            row["s"],
+            invalid=(
+                row.get("q") == "invalid_availability"
+                or invalid_bed_value(row["a"], row["o"])
+            ),
+        )
         by_key[key] = existing
     return [by_key[key] for key in sorted(by_key)]
 
@@ -660,6 +742,7 @@ def archive_national_daily(history, latest_rows, captured_at, quality):
             "saturation_min": row.get("saturation_min"),
             "saturation_max": row.get("saturation_max"),
             "sample_count": row.get("sample_count", 0),
+            "invalid_sample_count": row.get("invalid_sample_count", 0),
             "message_count_last": row.get("message_count"),
             "latitude": row.get("lat"),
             "longitude": row.get("lon"),
@@ -758,18 +841,31 @@ def archive_national_snapshot(rows, captured_at, quality):
 
 
 def summary(rows):
-    def known(kind):
-        return [row for row in rows if row[f"{kind}_available"] is not None and row[f"{kind}_total"]]
+    def valid_rows(kind):
+        return [
+            row
+            for row in rows
+            if valid_bed_value(row[f"{kind}_available"], row[f"{kind}_total"])
+        ]
 
-    general = known("general")
-    child = known("child")
-    general_reported_available = sum(row["general_available"] for row in general)
-    general_available = sum(max(0, row["general_available"]) for row in general)
-    general_overflow = sum(max(0, -row["general_available"]) for row in general)
+    def invalid_rows(kind):
+        return [
+            row
+            for row in rows
+            if invalid_bed_value(row[f"{kind}_available"], row[f"{kind}_total"])
+        ]
+
+    general = valid_rows("general")
+    child = valid_rows("child")
+    general_invalid = invalid_rows("general")
+    child_invalid = invalid_rows("child")
+    general_available = sum(row["general_available"] for row in general)
+    general_overflow = sum(
+        max(0, -row["general_available"]) for row in general_invalid
+    )
     general_total = sum(row["general_total"] for row in general)
-    child_reported_available = sum(row["child_available"] for row in child)
-    child_available = sum(max(0, row["child_available"]) for row in child)
-    child_overflow = sum(max(0, -row["child_available"]) for row in child)
+    child_available = sum(row["child_available"] for row in child)
+    child_overflow = sum(max(0, -row["child_available"]) for row in child_invalid)
     child_total = sum(row["child_total"] for row in child)
     return {
         "total": len(rows),
@@ -777,12 +873,16 @@ def summary(rows):
         "jeonnam": sum(1 for row in rows if row["region"] == "전남"),
         "general_available": general_available,
         "general_overflow": general_overflow,
+        "general_valid_count": len(general),
+        "general_invalid_count": len(general_invalid),
         "general_total": general_total,
-        "general_saturation": percent(general_reported_available, general_total),
+        "general_saturation": percent(general_available, general_total),
         "child_available": child_available,
         "child_overflow": child_overflow,
+        "child_valid_count": len(child),
+        "child_invalid_count": len(child_invalid),
         "child_total": child_total,
-        "child_saturation": percent(child_reported_available, child_total),
+        "child_saturation": percent(child_available, child_total),
         "grades": {
             grade: sum(1 for row in rows if row["grade"] == grade)
             for grade in ("A", "B", "C", "-")
@@ -791,6 +891,20 @@ def summary(rows):
 
 
 def update_static_text(source, captured_at, stats):
+    general_sat = (
+        f'{stats["general_saturation"]}%'
+        if stats.get("general_saturation") is not None
+        else "산정 불가"
+    )
+    child_sat = (
+        f'{stats["child_saturation"]}%'
+        if stats.get("child_saturation") is not None
+        else "산정 불가"
+    )
+    general_valid_count = stats.get("general_valid_count", 0)
+    child_valid_count = stats.get("child_valid_count", 0)
+    general_invalid_count = stats.get("general_invalid_count", 0)
+    child_invalid_count = stats.get("child_invalid_count", 0)
     source = re.sub(
         r"(?:지도 생성|마지막 수집) [0-9T:\-+.Z]+",
         f"마지막 수집 {captured_at}",
@@ -817,25 +931,17 @@ def update_static_text(source, captured_at, stats):
         count=1,
     )
     source = re.sub(
-        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>일반 응급실 (?:남은 병상|비음수 빈 병상 합)/전체 병상<br>(?:실시간|최근 수집) 포화 [^<]+</span></div>',
-        f'<div class="card"><strong>남은 {stats["general_available"]} / 전체 {stats["general_total"]}</strong><span>일반 응급실 비음수 빈 병상 합/전체 병상<br>최근 수집 포화 {stats["general_saturation"]}%'
-        + (
-            f' · 초과 보고 {stats["general_overflow"]}병상'
-            if stats["general_overflow"]
-            else ""
-        )
+        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>일반 응급실 [\s\S]*?</span></div>',
+        f'<div class="card"><strong>남은 {stats["general_available"]} / 전체 {stats["general_total"]}</strong><span>일반 응급실 유효 보고 {general_valid_count}곳 합계/전체 병상<br>최근 수집 포화 {general_sat}'
+        + (f' · 원천값 확인 {general_invalid_count}곳' if general_invalid_count else "")
         + "</span></div>",
         source,
         count=1,
     )
     source = re.sub(
-        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>소아 응급실 (?:남은 병상|비음수 빈 병상 합)/전체 병상<br>(?:실시간|최근 수집) 포화 [^<]+</span></div>',
-        f'<div class="card"><strong>남은 {stats["child_available"]} / 전체 {stats["child_total"]}</strong><span>소아 응급실 비음수 빈 병상 합/전체 병상<br>최근 수집 포화 {stats["child_saturation"]}%'
-        + (
-            f' · 초과 보고 {stats["child_overflow"]}병상'
-            if stats["child_overflow"]
-            else ""
-        )
+        r'<div class="card"><strong>남은 [^<]+ / 전체 [^<]+</strong><span>소아 응급실 [\s\S]*?</span></div>',
+        f'<div class="card"><strong>남은 {stats["child_available"]} / 전체 {stats["child_total"]}</strong><span>소아 응급실 유효 보고 {child_valid_count}곳 합계/전체 병상<br>최근 수집 포화 {child_sat}'
+        + (f' · 원천값 확인 {child_invalid_count}곳' if child_invalid_count else "")
         + "</span></div>",
         source,
         count=1,
@@ -897,7 +1003,7 @@ def main():
             [
                 {
                     "schema_version": HISTORY_SCHEMA_VERSION,
-                    "collector_version": 2,
+                    "collector_version": 3,
                     "source_name": "NEMC 내 손안의 응급실 간편조회 API",
                     "source_url": "https://mediboard.nemc.or.kr/api/v1/search/handy",
                     "captured": captured_at,
@@ -942,7 +1048,9 @@ def main():
         f"{MAP_HTML.name}: rows={stats['total']} "
         f"general={stats['general_available']}/{stats['general_total']} "
         f"child={stats['child_available']}/{stats['child_total']} "
-        f"national>={NATIONAL_THRESHOLD}%: {len(nat_rows)}/{nat_total} "
+        f"national>={NATIONAL_THRESHOLD}%: "
+        f"{sum(1 for row in nat_rows if row['s'] is not None)}/{nat_total} "
+        f"(invalid_bed_values={nat_quality['invalid_bed_value_count']}) "
         f"(snapshot={'complete' if national_complete else 'preserved-previous'}) "
         f"(duplicates={nat_quality['duplicate_count']}, "
         f"conflicts={nat_quality['conflicting_duplicate_count']}) "

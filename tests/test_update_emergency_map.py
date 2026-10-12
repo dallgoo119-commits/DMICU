@@ -34,6 +34,24 @@ class TimezoneTests(unittest.TestCase):
         self.assertEqual(updater.kst_date("2026-07-30T00:05:00"), "2026-07-30")
 
 
+class BedValueValidationTests(unittest.TestCase):
+    def test_percentage_requires_empty_beds_within_total(self):
+        self.assertEqual(updater.percent(2, 10), 80.0)
+        self.assertIsNone(updater.percent(-1, 10))
+        self.assertIsNone(updater.percent(11, 10))
+        self.assertIsNone(updater.percent(0, 0))
+        self.assertTrue(updater.valid_saturation_value(100))
+        self.assertFalse(updater.valid_saturation_value(100.1))
+
+    def test_invalid_values_are_identified_without_losing_raw_numbers(self):
+        self.assertTrue(updater.invalid_bed_value(-9, 3))
+        self.assertTrue(updater.invalid_bed_value(4, 3))
+        self.assertFalse(updater.invalid_bed_value(None, 3))
+        self.assertFalse(updater.invalid_bed_value(0, 0))
+        self.assertTrue(updater.inactive_bed_value(0, 0))
+        self.assertFalse(updater.invalid_bed_value(3, 3))
+
+
 class HistoryAggregationTests(unittest.TestCase):
     def setUp(self):
         self.row = {
@@ -76,7 +94,7 @@ class HistoryAggregationTests(unittest.TestCase):
             "2026-07-30T00:10:00+09:00",
         )
         record = next(item for item in result if item["code"] == self.row["code"])
-        self.assertEqual(record["schema_version"], 2)
+        self.assertEqual(record["schema_version"], updater.HISTORY_SCHEMA_VERSION)
         self.assertEqual(record["date_basis"], "Asia/Seoul")
         self.assertEqual(record["general_sample_count"], 1)
         self.assertEqual(record["general_saturation_avg"], 80.0)
@@ -100,6 +118,51 @@ class HistoryAggregationTests(unittest.TestCase):
         self.assertEqual(record["general_saturation_avg"], 80.5)
         self.assertEqual(record["first_sample_at"], "2026-07-30T00:10:00+09:00")
         self.assertEqual(record["last_sample_at"], "2026-07-30T00:40:00+09:00")
+
+    def test_invalid_snapshot_is_excluded_and_counted(self):
+        invalid_row = copy.deepcopy(self.row)
+        invalid_row["general_available"] = -9
+        invalid_row["general_total"] = 3
+        invalid_row["general_saturation"] = None
+        result = updater.update_history(
+            [],
+            [invalid_row],
+            "2026-07-30T00:10:00+09:00",
+        )
+        record = next(item for item in result if item["code"] == self.row["code"])
+        self.assertEqual(record["general_available"], -9)
+        self.assertEqual(record["general_total"], 3)
+        self.assertEqual(record["general_invalid_sample_count"], 1)
+        self.assertNotIn("general_saturation_avg", record)
+        self.assertNotIn("general_sample_count", record)
+
+    def test_invalid_snapshot_does_not_change_existing_valid_average(self):
+        first = updater.update_history(
+            [],
+            [self.row],
+            "2026-07-30T00:10:00+09:00",
+        )
+        invalid_row = copy.deepcopy(self.row)
+        invalid_row["general_available"] = -9
+        invalid_row["general_total"] = 3
+        invalid_row["general_saturation"] = None
+        result = updater.update_history(
+            first,
+            [invalid_row],
+            "2026-07-30T00:40:00+09:00",
+        )
+        record = next(item for item in result if item["code"] == self.row["code"])
+        self.assertEqual(record["general_sample_count"], 1)
+        self.assertEqual(record["general_saturation_avg"], 80.0)
+        self.assertEqual(record["general_saturation_min"], 80.0)
+        self.assertEqual(record["general_saturation_max"], 80.0)
+        self.assertEqual(record["general_invalid_sample_count"], 1)
+
+    def test_out_of_range_percentage_is_defensively_rejected(self):
+        record = {}
+        updater.merge_saturation(record, "general", 1766.7)
+        self.assertEqual(record["general_invalid_sample_count"], 1)
+        self.assertNotIn("general_saturation_avg", record)
 
 
 class NationalDeduplicationTests(unittest.TestCase):
@@ -126,6 +189,60 @@ class NationalDeduplicationTests(unittest.TestCase):
         self.assertEqual(quality["raw_item_count"], 2)
         self.assertEqual(quality["duplicate_count"], 1)
         self.assertEqual(quality["conflicting_duplicate_count"], 0)
+
+    def test_invalid_bed_value_is_retained_as_flagged_raw_report(self):
+        item = {
+            "emogCode": "A2600068",
+            "emergencyRoomName": "시험음수병원",
+            "emergencyInstitutionType": "지역응급의료기관",
+            "generalEmergencyAvailable": -9,
+            "generalEmergencyTotal": 3,
+            "latitude": 34.5,
+            "longitude": 127.1,
+            "address": "전남",
+        }
+        panel, total, _, _, history, quality = updater.fetch_national(
+            {"12": [item]},
+            [],
+        )
+        self.assertEqual(total, 1)
+        self.assertEqual(len(history), 1)
+        self.assertEqual(len(panel), 1)
+        self.assertEqual(panel[0]["a"], -9)
+        self.assertIsNone(panel[0]["s"])
+        self.assertEqual(panel[0]["q"], "invalid_availability")
+        self.assertEqual(quality["invalid_bed_value_count"], 1)
+
+    def test_national_invalid_sample_is_counted_without_polluting_average(self):
+        valid = {
+            "c": "A2600068",
+            "r": "전남",
+            "n": "시험병원",
+            "t": "지역응급의료기관",
+            "a": 1,
+            "o": 5,
+            "s": 80.0,
+            "q": None,
+            "m": 0,
+        }
+        first = updater.update_national_history(
+            [], [valid], "2026-07-30T00:10:00+09:00"
+        )
+        invalid = dict(valid, a=-9, o=3, s=None, q="invalid_availability")
+        result = updater.update_national_history(
+            first, [invalid], "2026-07-30T00:40:00+09:00"
+        )
+        record = next(item for item in result if item["code"] == valid["c"])
+        self.assertEqual(record["sample_count"], 1)
+        self.assertEqual(record["saturation_avg"], 80.0)
+        self.assertEqual(record["saturation_min"], 80.0)
+        self.assertEqual(record["saturation_max"], 80.0)
+        self.assertEqual(record["invalid_sample_count"], 1)
+
+        defensive = {}
+        updater.merge_national_saturation(defensive, 140.0)
+        self.assertEqual(defensive["invalid_sample_count"], 1)
+        self.assertNotIn("saturation_avg", defensive)
 
 
 class CompletenessTests(unittest.TestCase):
@@ -195,8 +312,10 @@ class DisplaySummaryTests(unittest.TestCase):
         result = updater.summary(rows)
         self.assertEqual(result["general_available"], 10)
         self.assertEqual(result["general_overflow"], 3)
-        self.assertEqual(result["general_total"], 30)
-        self.assertEqual(result["general_saturation"], 76.7)
+        self.assertEqual(result["general_valid_count"], 1)
+        self.assertEqual(result["general_invalid_count"], 1)
+        self.assertEqual(result["general_total"], 20)
+        self.assertEqual(result["general_saturation"], 50.0)
 
 
 class StaticSafetyCopyTests(unittest.TestCase):
@@ -208,10 +327,14 @@ class StaticSafetyCopyTests(unittest.TestCase):
             "jeonnam": 1,
             "general_available": 3,
             "general_overflow": 0,
+            "general_valid_count": 2,
+            "general_invalid_count": 1,
             "general_total": 10,
             "general_saturation": 70.0,
             "child_available": 1,
             "child_overflow": 0,
+            "child_valid_count": 1,
+            "child_invalid_count": 0,
             "child_total": 2,
             "child_saturation": 50.0,
             "grades": {"A": 1, "B": 1, "C": 0, "-": 0},
@@ -226,9 +349,17 @@ class StaticSafetyCopyTests(unittest.TestCase):
         self.assertIn("마지막 수집 2026-08-07T00:30:00+09:00", updated)
         self.assertIn("약 30분 주기로 갱신되는 병상 현황", updated)
         self.assertIn("최근 수집 포화 70.0%", updated)
+        self.assertIn("일반 응급실 유효 보고 2곳", updated)
+        self.assertIn("원천값 확인 1곳", updated)
         self.assertIn("참고용 안내", updated)
         self.assertIn("실제 수용 가능 여부를 반드시 확인", updated)
         self.assertNotIn("실시간 포화", updated)
+        self.assertEqual(
+            updater.update_static_text(
+                updated, "2026-08-07T00:30:00+09:00", stats
+            ),
+            updated,
+        )
 
 
 class ResearchArchiveTests(unittest.TestCase):
@@ -277,7 +408,7 @@ class ResearchArchiveTests(unittest.TestCase):
         history = [
             {
                 "date": "2026-07-30",
-                "schema_version": 2,
+                "schema_version": updater.HISTORY_SCHEMA_VERSION,
                 "date_basis": "Asia/Seoul",
                 "code": "A1",
                 "region": "서울",
@@ -292,7 +423,7 @@ class ResearchArchiveTests(unittest.TestCase):
             },
             {
                 "date": "2026-07-30",
-                "schema_version": 2,
+                "schema_version": updater.HISTORY_SCHEMA_VERSION,
                 "date_basis": "Asia/Seoul",
                 "code": "A2",
                 "region": "서울",

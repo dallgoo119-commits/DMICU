@@ -30,8 +30,13 @@ test("every inline dashboard script parses", () => {
 });
 
 const helperNames = new Set([
+  "validBed",
+  "inactiveBed",
+  "invalidBed",
+  "validSat",
   "bedText",
   "satText",
+  "overallSat",
   "isIsoDate",
   "addIsoDays",
   "isoRange",
@@ -40,11 +45,22 @@ const helperNames = new Set([
   "dateRange",
   "completedDateRange",
   "dailyValue",
+  "dailyMin",
+  "dailyMax",
   "dailyCount",
   "isDailyAggregate",
+  "validDailyRecord",
   "analysisValue",
   "completedKstValue",
   "risk",
+  "nationalDailyValue",
+  "nationalDailyMin",
+  "nationalDailyMax",
+  "nationalDailyCount",
+  "nationalIsDailyAggregate",
+  "nationalValidDailyRecord",
+  "nationalAnalysisValue",
+  "nationalCompletedKstValue",
 ]);
 
 const dashboardScript = inlineScripts.at(-1);
@@ -59,6 +75,13 @@ const helperSource = dashboardScript
 const context = vm.createContext({ Intl, Date, Number, Math, Set });
 vm.runInContext(helperSource, context);
 vm.runInContext("todayIso = () => '2026-07-30';", context);
+
+const currentData = JSON.parse(
+  html.match(/const DATA=(\[[\s\S]*?\]);/)[1],
+);
+const currentNational = JSON.parse(
+  html.match(/const NATIONAL=(\[[\s\S]*?\]);/)[1],
+);
 
 test("7, 30 and 90 day periods are trailing ranges without future dates", () => {
   assert.deepEqual(
@@ -150,11 +173,87 @@ test("period statistics use only completed KST days", () => {
   );
 });
 
-test("missing and negative availability are displayed without overclaiming", () => {
+test("invalid upstream bed values stay visible but are excluded from saturation", () => {
   assert.equal(vm.runInContext("bedText(null, 10)", context), "미수집");
-  assert.equal(vm.runInContext("bedText(-2, 10)", context), "0/10 · 초과 2");
   assert.equal(
-    vm.runInContext("satText(120)", context),
-    "포화 120% · 초과 보고",
+    vm.runInContext("bedText(-2, 10)", context),
+    "원천 -2/10 · 확인 필요",
   );
+  assert.equal(
+    vm.runInContext("satText(120, -2, 10)", context),
+    "포화도 산정 제외",
+  );
+  assert.equal(vm.runInContext("validBed(2, 10)", context), true);
+  assert.equal(vm.runInContext("validBed(-2, 10)", context), false);
+  assert.equal(vm.runInContext("inactiveBed(0, 0)", context), true);
+  assert.equal(vm.runInContext("invalidBed(0, 0)", context), false);
+  assert.equal(vm.runInContext("bedText(0, 0)", context), "운영 병상 없음");
+  assert.equal(vm.runInContext("validSat(100)", context), true);
+  assert.equal(vm.runInContext("validSat(100.1)", context), false);
+});
+
+test("every current invalid report renders as a quality warning, never a percentage", () => {
+  const localInvalid = currentData.filter(
+    (row) => row.general_available != null
+      && row.general_total != null
+      && !(row.general_total > 0
+        && row.general_available >= 0
+        && row.general_available <= row.general_total),
+  );
+  assert.ok(localInvalid.length > 0);
+  for (const row of localInvalid) {
+    context.row = row;
+    assert.match(
+      vm.runInContext("bedText(row.general_available, row.general_total)", context),
+      /확인 필요/,
+    );
+    assert.equal(
+      vm.runInContext(
+        "satText(row.general_saturation, row.general_available, row.general_total)",
+        context,
+      ),
+      "포화도 산정 제외",
+    );
+    const overall = vm.runInContext("overallSat(row)", context);
+    assert.ok(overall == null || (overall >= 0 && overall <= 100));
+  }
+
+  const nationalInvalid = currentNational.filter(
+    (row) => !(row.o > 0 && row.a >= 0 && row.a <= row.o)
+      || !(Number.isFinite(row.s) && row.s >= 0 && row.s <= 100),
+  );
+  assert.ok(nationalInvalid.length > 0);
+  for (const row of nationalInvalid) {
+    context.row = row;
+    assert.equal(
+      vm.runInContext("satText(row.s, row.a, row.o)", context),
+      "포화도 산정 제외",
+    );
+  }
+});
+
+test("historical outlier days cannot distort statistics or chart axes", () => {
+  assert.equal(
+    vm.runInContext(
+      "analysisValue({general_saturation_avg: 80, general_saturation_min: 20, general_saturation_max: 1766.7, general_sample_count: 20}, 'general')",
+      context,
+    ),
+    null,
+  );
+  assert.equal(
+    vm.runInContext(
+      "analysisValue({general_saturation_avg: 80, general_saturation_min: 20, general_saturation_max: 100, general_sample_count: 20, general_invalid_sample_count: 3}, 'general')",
+      context,
+    ),
+    80,
+  );
+  assert.equal(
+    vm.runInContext(
+      "nationalAnalysisValue({saturation_avg: 75, saturation_min: 10, saturation_max: 140, sample_count: 20})",
+      context,
+    ),
+    null,
+  );
+  assert.match(html, /y:\{min:0,max:100/);
+  assert.doesNotMatch(html, /suggestedMax:100/);
 });
